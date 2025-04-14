@@ -1,0 +1,6 @@
+name: severus
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - severus=1.4.0

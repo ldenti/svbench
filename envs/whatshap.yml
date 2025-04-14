@@ -1,0 +1,7 @@
+name: whatshap
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - whatshap=2.5
+  - dataclasses

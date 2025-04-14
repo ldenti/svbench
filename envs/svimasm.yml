@@ -1,0 +1,6 @@
+name: svimasm
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  -  svim-asm=1.0.3

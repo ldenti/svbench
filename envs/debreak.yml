@@ -1,0 +1,6 @@
+name: debreak
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - debreak=1.3

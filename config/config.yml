@@ -1,0 +1,28 @@
+name: RUN_NAME, e.g., HG002
+fa: REFERENCE_GENOME.FASTA
+fq: READ_SAMPLE.FQ.GZ
+hap1: HAPLOTYPE1.FASTA
+hap2: HAPLOTYPE2.FASTA
+trf: TRF.BED
+wd: OUTPUT_DIRECTORY
+truths:
+  - dipcall
+  - svim-asm
+  # - hapdiff
+  # - severus-paper
+callers:
+  - sniffles
+  - cutesv-w2
+  # - cutesv-w5
+  # - cutesv-w10
+  # - SVDSS-w2
+  # - SVDSS-w4
+  # - SVDSS2-q0.98-w2
+  - SVDSS2ht-q0.98-w2
+  # - SVDSS2-q0.99-w2
+  # - SVDSS2-q0.98-w4
+  - severus-w2
+  # - severus-w3
+  - debreak
+  - svisionpro-w2
+  # - svisionpro-w5

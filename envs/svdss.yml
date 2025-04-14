@@ -1,0 +1,8 @@
+name: svdss
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - svdss=1.0.5
+  - samtools
+  - bcftools

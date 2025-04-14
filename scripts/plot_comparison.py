@@ -22,14 +22,20 @@ def parse_summary(fpath):
 
 
 def main():
+    print("This script assumes <= 3 truth callsets!", file=sys.stderr)
     in_dir = sys.argv[1]
 
-    labels = ["dipcall", "svim-asm", "severus-paper"]
-    indexes = {"dipcall": 0, "svim-asm": 1, "severus-paper": 2}
+    labels = []  # ["dipcall", "svim-asm", "severus-paper"]
+    indexes = {}  # {"dipcall": 0, "svim-asm": 1, "severus-paper": 2}
+    for i, f in enumerate(glob.glob(f"{in_dir}/*.vcf.gz")):
+        fname = f.split("/")[-1][:-7]
+        labels.append(fname)
+        indexes[fname] = i
+
     pairs = [
         ("dipcall", "svim-asm"),
-        ("dipcall", "severus-paper"),
-        ("svim-asm", "severus-paper"),
+        ("dipcall", "severus-paper" if "severus-paper" in labels else "hapdiff"),
+        ("svim-asm", "severus-paper" if "severus-paper" in labels else "hapdiff"),
     ]
     M = [[0 for _ in labels] for _ in labels]
     two = False

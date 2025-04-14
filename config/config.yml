@@ -8,21 +8,21 @@ wd: OUTPUT_DIRECTORY
 truths:
   - dipcall
   - svim-asm
-  # - hapdiff
-  # - severus-paper
+  - hapdiff
+  # - severus-paper # can use this against hg19
 callers:
   - sniffles
   - cutesv-w2
-  # - cutesv-w5
-  # - cutesv-w10
-  # - SVDSS-w2
+  - cutesv-w5
+  # - cutesv-w10 # default
+  - SVDSS-w2 # default
   # - SVDSS-w4
-  # - SVDSS2-q0.98-w2
+  - SVDSS2-q0.98-w2
   - SVDSS2ht-q0.98-w2
-  # - SVDSS2-q0.99-w2
+  - SVDSS2-q0.99-w2
   # - SVDSS2-q0.98-w4
   - severus-w2
-  # - severus-w3
+  - severus-w3 # default
   - debreak
   - svisionpro-w2
-  # - svisionpro-w5
+  - svisionpro-w5 # default

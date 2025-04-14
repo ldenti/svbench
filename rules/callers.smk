@@ -215,7 +215,7 @@ rule svisionpro:
             "model_liteunet_256_8_16_32_32_32.pth",
         ),
     output:
-        vcf=pjoin(WD, "svisionpro-{w}", f"{SAMPLE_NAME}.svision_pro_v2.4.s2.vcf"),
+        vcf=pjoin(WD, "svisionpro-{w}", f"{SAMPLE_NAME}.svision_pro_v2.4.s{{w}}.vcf"),
     params:
         odir=pjoin(WD, "svisionpro-{w}"),
     log:
@@ -232,7 +232,7 @@ rule svisionpro:
 
 rule svisionpro_post:
     input:
-        vcf=pjoin(WD, "svisionpro-{w}", f"{SAMPLE_NAME}.svision_pro_v2.4.s2.vcf"),
+        vcf=pjoin(WD, "svisionpro-{w}", f"{SAMPLE_NAME}.svision_pro_v2.4.s{{w}}.vcf"),
     output:
         vcf=pjoin(WD, "callsets", "svisionpro-w{w}.vcf.gz"),
     conda:

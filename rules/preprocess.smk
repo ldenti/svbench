@@ -42,8 +42,8 @@ rule whathshap:
     output:
         vcf=pjoin(WD, "deepvariant-phased.vcf.gz"),
     threads: workflow.cores
-    # conda:
-    #     "../envs/whatshap.yml"
+    conda:
+        "../envs/whatshap.yml"
     shell:
         """
         whatshap phase -o {output.vcf} --reference {input.fa} {input.vcf} {input.bam}
@@ -59,8 +59,8 @@ rule wh_haplo:
     output:
         bam=BAM_HT,
     threads: workflow.cores
-    # conda:
-    #     "../envs/whatshap.yml"
+    conda:
+        "../envs/whatshap.yml"
     shell:
         """
         whatshap haplotag --reference {input.fa} {input.vcf} {input.bam} | samtools view -bS | samtools sort > {output.bam}

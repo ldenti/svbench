@@ -48,17 +48,14 @@ include: "rules/minda.smk"
 
 rule all:
     input:
-        # pjoin(WD, "truths", "hapdiff"),
+        pjoin(WD, "truvari-all.f1.png"),
+        # pjoin(WD, "truths", "stats.png"),
         # from truvari.smk
-        expand(
-            pjoin(WD, "{truth}.truvari-{opt}.csv"), truth=TRUTHS, opt=truvari_options
-        ),
         expand(
             pjoin(WD, "{truth}.truvari-{opt}.csv.png"),
             truth=TRUTHS,
             opt=truvari_options,
         ),
-        # expand(pjoin(WD, "{truth}.truvari41-{opt}.csv"), truth=TRUTHS, opt=truvari_options),
         # expand(pjoin(WD, "minda-{truth}", "{caller}"), truth=TRUTHS, caller=CALLERS),
 
 
@@ -71,6 +68,36 @@ rule copy_truth:
         """
         cp {input} {output}
         cp {input}.tbi {output}.tbi
+        """
+
+
+# rule plot_truth:
+#     input:
+#         expand(pjoin(WD, "truths", "{truth}.vcf.gz"), truth=TRUTHS),
+#     output:
+#         pjoin(WD, "truths", "stats.png"),
+#     params:
+#         tdir=pjoin(WD, "truths"),
+#     conda:
+#         "./envs/seaborn.yml"
+#     shell:
+#         """
+#         python3 ./scripts/plot_truth.py all {params.tdir}
+#         """
+
+
+rule plot_truvari_all:
+    input:
+        expand(
+            pjoin(WD, "{truth}.truvari-{opt}.csv"), truth=TRUTHS, opt=truvari_options
+        ),
+    output:
+        pjoin(WD, "truvari-all.f1.png"),
+    conda:
+        "./envs/seaborn.yml"
+    shell:
+        """
+        python3 ./scripts/plot_truvari.py all {WD}
         """
 
 

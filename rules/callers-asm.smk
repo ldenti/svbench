@@ -158,7 +158,7 @@ rule hapdiff:
         """
 
 
-rule hapdif_post:
+rule hapdiff_post:
     input:
         vcf=pjoin(WD, "truths", "hapdiff", "hapdiff_phased.vcf.gz"),
     output:

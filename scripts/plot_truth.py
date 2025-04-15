@@ -96,7 +96,8 @@ def main():
         ax=ax3,
     )
 
-    plt.show()
+    # plt.show()
+    plt.savefig(vcf_dir + "/stats.png")
 
 
 if __name__ == "__main__":

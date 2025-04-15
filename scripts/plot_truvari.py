@@ -9,7 +9,7 @@ sns.set(style="whitegrid")
 
 
 def main_matrix():
-    sns.set(font_scale=0.9)
+    sns.set(font_scale=0.7)
     ddir = sys.argv[1]
 
     data = []
@@ -36,7 +36,13 @@ def main_matrix():
         new_df = pd.DataFrame(new_data, columns=["Truth", "Bench", "Tool", "F1"])
         df = pd.concat([df, new_df], ignore_index=True)
 
-    g = sns.FacetGrid(df, row="Truth", col="Bench", margin_titles=True)
+    ro = df["Truth"].unique()
+    ro.sort()
+    co = df["Bench"].unique()
+    co.sort()
+    g = sns.FacetGrid(
+        df, row="Truth", col="Bench", row_order=ro, col_order=co, margin_titles=True
+    )
     g.map(
         sns.barplot,
         "Tool",
@@ -53,7 +59,8 @@ def main_matrix():
             ax.bar_label(ax.containers[0])
 
     plt.tight_layout()
-    plt.show()
+    # plt.show()
+    plt.savefig(ddir + "/truvari-all.f1.png", dpi=300)
 
 
 def main_bar():
@@ -66,14 +73,15 @@ def main_bar():
     sns.scatterplot(data=df, x="P", y="R", hue="Tool", ax=ax1, legend=None)
 
     for index, row in df.iterrows():
-        ax1.text(row["P"] + 0.2, row["R"] + 0.2, row["Tool"])
-    # ax1.set_xlim(50, 100)
-    # ax1.set_ylim(50, 100)
+        if row["P"] >= 50 and row["R"] >= 50:
+            ax1.text(row["P"] + 0.2, row["R"] + 0.2, row["Tool"])
+    ax1.set_xlim(50, 100)
+    ax1.set_ylim(50, 100)
 
     sns.barplot(data=df, x="Tool", y="F1", ax=ax2, color="steelblue", alpha=0.75)
     ax2.tick_params(axis="x", labelrotation=90)
     ax2.bar_label(ax2.containers[0])
-
+    ax2.set_ylim(50, 100)
     plt.tight_layout()
     # plt.show()
     plt.savefig(csv_fn + ".png", dpi=300)

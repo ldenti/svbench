@@ -26,7 +26,7 @@ rule svdss2_smooth:
         time=pjoin(WD, "times", "svdss2-smooth-q{q}.time"),
     shell:
         """
-        /usr/bin/time -vo {log.time} {SVDSS2_BIN} smooth --reference {input.fa} --bam {input.bam} --threads {threads} --quantile {wildcards.q} > {output.bam}
+        /usr/bin/time -vo {log.time} {SVDSS2_BIN} smooth --reference {input.fa} --bam {input.bam} --threads {threads} --accp {wildcards.q} > {output.bam}
         samtools index {output.bam}
         """
 

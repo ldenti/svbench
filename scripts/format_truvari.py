@@ -26,8 +26,8 @@ def main():
     for f in glob.glob(os.path.join(indir, "*", "summary.json")):
         tool = f.split("/")[-2]
         tp, fp, fn = parse_summary(f)
-        P = round(tp / (tp + fp) * 100, 1)
-        R = round(tp / (tp + fn) * 100, 1)
+        P = round(tp / (tp + fp) * 100, 1) if tp+fp > 0 else 0.0
+        R = round(tp / (tp + fn) * 100, 1) if tp+fn > 0 else 0.0
         F = round(2 * (P * R) / (P + R) if P + R != 0 else 0.0, 1)
         print(tool, tp, fp, fn, P, R, F, sep=",")
 

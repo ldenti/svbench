@@ -33,7 +33,7 @@ include: "rules/svdss.smk"
 # postprocessing
 truvari_options = {
     "def": "--passonly --dup-to-ins",
-    "nopass": "--dup-to-ins",
+    # "nopass": "--dup-to-ins",
     "nosim": "--passonly --dup-to-ins -p 0",
     # "cus":"--passonly --dup-to-ins -s 50 -S 50",
     "bed": "--passonly --dup-to-ins --includebed "
@@ -48,15 +48,14 @@ include: "rules/minda.smk"
 
 rule all:
     input:
-        pjoin(WD, "truvari-all.f1.png"),
-        # pjoin(WD, "truths", "stats.png"),
+        # pjoin(WD, "truvari-all.f1.png"),
+        pjoin(WD, "truths", "stats.png"),
         # from truvari.smk
         expand(
             pjoin(WD, "{truth}.truvari-{opt}.csv.png"),
             truth=TRUTHS,
             opt=truvari_options,
         ),
-        # expand(pjoin(WD, "minda-{truth}", "{caller}"), truth=TRUTHS, caller=CALLERS),
 
 
 rule copy_truth:
@@ -71,19 +70,19 @@ rule copy_truth:
         """
 
 
-# rule plot_truth:
-#     input:
-#         expand(pjoin(WD, "truths", "{truth}.vcf.gz"), truth=TRUTHS),
-#     output:
-#         pjoin(WD, "truths", "stats.png"),
-#     params:
-#         tdir=pjoin(WD, "truths"),
-#     conda:
-#         "./envs/seaborn.yml"
-#     shell:
-#         """
-#         python3 ./scripts/plot_truth.py all {params.tdir}
-#         """
+rule plot_truth:
+    input:
+        expand(pjoin(WD, "truths", "{truth}.vcf.gz"), truth=TRUTHS),
+    output:
+        pjoin(WD, "truths", "stats.png"),
+    params:
+        tdir=pjoin(WD, "truths"),
+    conda:
+        "./envs/seaborn.yml"
+    shell:
+        """
+        python3 ./scripts/plot_truth.py {params.tdir}
+        """
 
 
 rule plot_truvari_all:

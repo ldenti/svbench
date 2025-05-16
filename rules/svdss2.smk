@@ -1,6 +1,3 @@
-SVDSS2_BIN = "/home/ldenti/code/SVDSS/SVDSS"
-
-
 rule svdss2_index:
     input:
         fa=REF,
@@ -9,9 +6,11 @@ rule svdss2_index:
     threads: workflow.cores
     log:
         time=pjoin(WD, "times", "rb3-index.time"),
+    conda:
+        "../envs/svdss2.yml"
     shell:
         """
-        /usr/bin/time -vo {log.time} /home/ldenti/code/SVDSS/build/ropebwt-prefix/src/ropebwt/ropebwt3 build -t{threads} -d {input.fa} -o {output.fmd}
+        /usr/bin/time -vo {log.time} SVDSS index -t{threads} -d {input.fa} -o {output.fmd}
         """
 
 
@@ -24,9 +23,11 @@ rule svdss2_smooth:
     threads: workflow.cores
     log:
         time=pjoin(WD, "times", "svdss2-smooth-q{q}.time"),
+    conda:
+        "../envs/svdss2.yml"
     shell:
         """
-        /usr/bin/time -vo {log.time} {SVDSS2_BIN} smooth --reference {input.fa} --bam {input.bam} --threads {threads} --accp {wildcards.q} > {output.bam}
+        /usr/bin/time -vo {log.time} SVDSS smooth --reference {input.fa} --bam {input.bam} --threads {threads} --accp {wildcards.q} > {output.bam}
         samtools index {output.bam}
         """
 
@@ -40,9 +41,11 @@ rule svdss2_search:
     threads: workflow.cores
     log:
         time=pjoin(WD, "times", "svdss2-search-q{q}.time"),
+    conda:
+        "../envs/svdss2.yml"
     shell:
         """
-        /usr/bin/time -vo {log.time} {SVDSS2_BIN} search --index {input.fmd} --bam {input.bam} --threads {threads} > {output.sfs}
+        /usr/bin/time -vo {log.time} SVDSS search --index {input.fmd} --bam {input.bam} --threads {threads} > {output.sfs}
         """
 
 
@@ -57,9 +60,11 @@ rule svdss2_call:
     threads: workflow.cores
     log:
         time=pjoin(WD, "times", "svdss2-call-q{q}-w{w}.time"),
+    conda:
+        "../envs/svdss2.yml"
     shell:
         """
-        /usr/bin/time -vo {log.time} {SVDSS2_BIN} call --min-sv-length 50 --min-cluster-weight {wildcards.w} --reference {input.fa} --bam {input.bam} --sfs {input.sfs} --threads {threads} --poa {output.sam} | bgzip -c > {output.vcf}
+        /usr/bin/time -vo {log.time} SVDSS call --min-sv-length 50 --min-cluster-weight {wildcards.w} --reference {input.fa} --bam {input.bam} --sfs {input.sfs} --threads {threads} --poa {output.sam} | bgzip -c > {output.vcf}
         tabix -p vcf {output.vcf}
         """
 
@@ -74,8 +79,10 @@ rule svdss2_gt:
     threads: workflow.cores
     log:
         time=pjoin(WD, "times", "SVDSS2-gt-q{q}-w{w}.time"),
+    conda:
+        "../envs/svdss2.yml"
     shell:
         """
-        /usr/bin/time -vo {log.time} /home/ldenti/software/kanpig/target/release/kanpig gt --threads {threads} --input {input.vcf} --reads {input.bam} --reference {input.fa} | sed "s/FT/KF/g" | bcftools sort -Oz > {output.vcf}
+        /usr/bin/time -vo {log.time} kanpig gt --threads {threads} --input {input.vcf} --reads {input.bam} --reference {input.fa} | sed "s/FT/KF/g" | bcftools sort -Oz > {output.vcf}
         tabix -p vcf {output.vcf}
         """

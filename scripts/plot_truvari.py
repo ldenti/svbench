@@ -61,7 +61,24 @@ def main_matrix():
     plt.tight_layout()
     # plt.show()
     plt.savefig(ddir + "/truvari-all.f1.png", dpi=300)
+    plt.close()
 
+    sns.stripplot(df, x="F1", y="Tool", hue="Tool")
+    plt.tight_layout()
+    # plt.show()
+    plt.savefig(ddir + "/truvari-all.sp.png", dpi=300)
+    plt.close()
+
+    sns.violinplot(df, x="F1", y="Tool", hue="Tool")
+    plt.tight_layout()
+    # plt.show()
+    plt.savefig(ddir + "/truvari-all.vp.png", dpi=300)
+    plt.close()
+
+    sns.boxplot(df, x="F1", y="Tool", hue="Tool")
+    plt.tight_layout()
+    # plt.show()
+    plt.savefig(ddir + "/truvari-all.bp.png", dpi=300)
 
 def main_bar():
     sns.set(font_scale=0.75)

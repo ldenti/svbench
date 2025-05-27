@@ -7,21 +7,161 @@ import seaborn as sns
 
 sns.set(style="whitegrid")
 
+TOOLS = [
+    "cutesv-w4",
+    "debreak",
+    "severus-w4",
+    "sniffles",
+    "svisionpro-w4",
+    "SVDSS-w4",
+    "SVDSS2ht-q0.98-w4",
+]
 
-def main_matrix():
-    sns.set(font_scale=0.7)
-    ddir = sys.argv[1]
+BENCHS = [
+    "truvari-def",
+    "truvari-bed",
+    "truvari-nosim",
+    # "truvari-sev",
+]
 
+
+def parse_ddir(ddir, refseq=""):
     data = []
     for csv_fp in glob.glob(f"{ddir}/*.csv"):
         truth, bench, _ = csv_fp.split("/")[-1].split(".")
+        if truth == "severus-paper":
+            truth = "hapdiff"
         for line in open(csv_fp):
             if line.startswith("Tool"):
                 continue
             line = line.strip("\n").split(",")
             tool = line[0]
+            if tool not in TOOLS:
+                continue
+            if bench not in BENCHS:
+                continue
+            if "-" in tool:
+                tool = tool.split("-")[0]
             f1 = float(line[-1])
-            data.append([truth, bench, tool, f1])
+            if f1 == 0:
+                continue
+            data.append([refseq, truth, bench, tool, f1])
+    return data
+
+
+def main_rankmap():
+    CMAP = "Purples_r"
+
+    ddir = sys.argv[1]
+    refseq = sys.argv[2]
+
+    data = parse_ddir(ddir, refseq)
+    df = pd.DataFrame(data, columns=["RefSeq", "Truth", "Bench", "Tool", "F1"])
+
+    truths = list(df["Truth"].unique())
+    truths.sort()
+    tools = list(df["Tool"].unique())
+    tools.sort()
+
+    fig, axes = plt.subplots(1, 3)
+    for i, bench in enumerate(BENCHS):
+        M = [[len(tools) for _ in truths] for _ in tools]
+        for col, truth in enumerate(truths):
+            df2 = df[(df["Bench"] == bench) & (df["Truth"] == truth)]
+            print(df2)
+            f1s = [(tool, f1) for tool, f1 in zip(df2["Tool"], df2["F1"])]
+            f1s.sort(key=lambda x: x[1], reverse=True)
+            print(f1s)
+            for rank, (tool, _) in enumerate(f1s, 1):
+                M[tools.index(tool)][col] = rank
+        sns.heatmap(
+            M,
+            ax=axes[i],
+            annot=True,
+            xticklabels=truths,
+            yticklabels=tools if i == 0 else False,
+            cbar=False,
+            cmap=CMAP,
+        )
+        axes[i].set_title(bench)
+
+    plt.suptitle(refseq)
+    plt.tight_layout()
+    plt.show()
+
+
+def main_matrix2():
+    sns.set(font_scale=0.7)
+    t2t_ddir = sys.argv[1]
+    hg38_ddir = sys.argv[2]
+    hg19_ddir = sys.argv[3]
+
+    data = []
+    data += parse_ddir(t2t_ddir, "T2T")
+    data += parse_ddir(hg38_ddir, "hg38")
+    data += parse_ddir(hg19_ddir, "hg19")
+
+    df = pd.DataFrame(data, columns=["RefSeq", "Truth", "Bench", "Tool", "F1"])
+    print(df)
+
+    tools = df["Tool"].unique()
+    tools.sort()
+    ro = df["Truth"].unique()
+    ro.sort()
+    co = BENCHS
+
+    g = sns.catplot(
+        data=df,
+        x="Tool",
+        y="F1",
+        hue="RefSeq",
+        col="Bench",
+        row="Truth",
+        kind="bar",
+        order=tools,
+        row_order=ro,
+        col_order=co,
+        sharex=True,
+        sharey=True,
+        height=4,
+        aspect=0.6,
+        margin_titles=True,
+        legend_out=False,
+    )
+
+    g.tick_params(axis="x", labelrotation=90)  # set_xticklabels(rotation=90)
+    g.set(ylim=(40, 100))
+
+    for row in g.axes:
+        for ax in row:
+            ax.bar_label(ax.containers[0], rotation=60)
+            ax.bar_label(ax.containers[1], rotation=60)
+            ax.bar_label(ax.containers[2], rotation=60)
+
+    plt.tight_layout()
+    plt.show()
+    # plt.savefig(ddir + "/truvari-all.f1.png", dpi=300)
+    plt.close()
+
+    ax = sns.stripplot(
+        df,
+        x="F1",
+        y="Tool",
+        hue="RefSeq",
+        alpha=0.6,
+        s=6,
+        order=tools,
+    )
+    ax.set_xlim(xmax=100)
+    plt.tight_layout()
+    plt.show()
+
+
+def main_matrix():
+    sns.set(font_scale=0.7)
+    ddir = sys.argv[1]
+
+    data = parse_ddir(ddir)
     df = pd.DataFrame(data, columns=["Truth", "Bench", "Tool", "F1"])
     print(df)
 
@@ -59,26 +199,15 @@ def main_matrix():
             ax.bar_label(ax.containers[0])
 
     plt.tight_layout()
-    # plt.show()
-    plt.savefig(ddir + "/truvari-all.f1.png", dpi=300)
+    plt.show()
+    # plt.savefig(ddir + "/truvari-all.f1.png", dpi=300)
     plt.close()
 
     sns.stripplot(df, x="F1", y="Tool", hue="Tool")
     plt.tight_layout()
-    # plt.show()
-    plt.savefig(ddir + "/truvari-all.sp.png", dpi=300)
-    plt.close()
+    plt.show()
+    # plt.savefig(ddir + "/truvari-all.sp.png", dpi=300)
 
-    sns.violinplot(df, x="F1", y="Tool", hue="Tool")
-    plt.tight_layout()
-    # plt.show()
-    plt.savefig(ddir + "/truvari-all.vp.png", dpi=300)
-    plt.close()
-
-    sns.boxplot(df, x="F1", y="Tool", hue="Tool")
-    plt.tight_layout()
-    # plt.show()
-    plt.savefig(ddir + "/truvari-all.bp.png", dpi=300)
 
 def main_bar():
     sns.set(font_scale=0.75)
@@ -108,6 +237,12 @@ if __name__ == "__main__":
     if sys.argv[1] == "all":
         sys.argv.pop(0)
         main_matrix()
+    elif sys.argv[1] == "all2":
+        sys.argv.pop(0)
+        main_matrix2()
+    elif sys.argv[1] == "rank":
+        sys.argv.pop(0)
+        main_rankmap()
     elif sys.argv[1] == "single":
         sys.argv.pop(0)
         main_bar()

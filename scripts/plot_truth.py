@@ -4,10 +4,17 @@ from collections import Counter
 
 from pysam import VariantFile
 import pandas as pd
+import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+font = {"size": 31}
+matplotlib.rc("font", **font)
+
+
 sns.set(style="whitegrid")
+
+TRUTHS = ["dipcall", "svim-asm", "hapdiff"]
 
 
 def main():
@@ -19,6 +26,8 @@ def main():
     df = []
     for vcf_fn in glob.glob(f"{vcf_dir}/*.vcf.gz"):
         name = vcf_fn.split("/")[-1].split(".")[0]
+        if name not in TRUTHS:
+            continue
         truths[name] = {}
         for record in VariantFile(vcf_fn):
             l = len(record.alts[0]) - len(record.ref)
@@ -29,17 +38,35 @@ def main():
             # elif name != "dipcall" and "PASS" not in filters:
             #     continue
 
-            if abs(l) >= 50:
+            gt1, gt2 = record.samples[0]["GT"]
+            gt1 = gt1 if gt1 != None else 0
+            gt2 = gt2 if gt2 != None else 0
+
+            if abs(l) >= 50 and (gt1 > 0 or gt2 > 0):
+                # if name == "dipcall" and abs(l) >= 167 and abs(l) <= 171:
+                #     print(
+                #         record.contig,
+                #         record.pos,
+                #         record.pos + abs(l) if l < 0 else record.pos + 1,
+                #         sep="\t",
+                #     )
                 df.append(
-                    [name, record.contig, record.pos, l, "INS" if l > 0 else "DEL"]
+                    [
+                        name,
+                        record.contig,
+                        record.pos,
+                        l,
+                        "INS" if l > 0 else "DEL",
+                        gt1 == gt2,
+                    ]
                 )
                 if record.contig not in truths[name]:
                     truths[name][record.contig] = []
                 truths[name][record.contig].append(record.pos)
 
-    df = pd.DataFrame(df, columns=["Truth", "Chrom", "Pos", "Len", "Type"])
+    df = pd.DataFrame(df, columns=["Truth", "Chrom", "Pos", "Len", "Type", "GT"])
 
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4)
 
     # number of variants per truthset
     df2 = df.groupby(["Truth", "Type"]).count()
@@ -48,11 +75,13 @@ def main():
         x="Truth",
         y="Chrom",
         hue="Type",
+        palette="Set2",
         ax=ax1,
     )
-    ax1.set_ylabel("Count")
+    ax1.set_ylabel("")  # Count
     ax1.bar_label(ax1.containers[0])
     ax1.bar_label(ax1.containers[1])
+    ax1.set_title("(a)")
 
     # variant length distribution per truthset
     sns.histplot(
@@ -63,6 +92,21 @@ def main():
         fill=False,
         ax=ax2,
     )
+    ax2.set_xlabel("Length")
+    ax2.set_ylabel("")  # Count
+    ax2.set_title("(b)")
+
+    # GT distribution
+    gtdf = []
+    for truth in truths:
+        for b in [True, False]:
+            gt = "1/1" if b else "0/1"
+            gtdf.append([truth, gt, len(df[(df["Truth"] == truth) & (df["GT"] == b)])])
+    gtdf = pd.DataFrame(gtdf, columns=["Truth", "GT", "Count"])
+
+    sns.barplot(gtdf, x="Truth", y="Count", hue="GT", palette="Set2", ax=ax3)
+    ax3.set_ylabel("")  # Count
+    ax3.set_title("(c)")
 
     # neighbor distribution per truthset
     df2 = []
@@ -93,11 +137,14 @@ def main():
         order=["0", "1", "2", "3+"],
         y="Count",
         hue="Truth",
-        ax=ax3,
+        ax=ax4,
     )
+    ax4.set_ylabel("")  # Count
+    ax4.set_title("(d)")
 
-    # plt.show()
-    plt.savefig(vcf_dir + "/stats.png")
+    plt.tight_layout()
+    plt.show()
+    # plt.savefig(vcf_dir + "/stats.png")
 
 
 if __name__ == "__main__":

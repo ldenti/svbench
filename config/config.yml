@@ -1,28 +1,30 @@
-name: RUN_NAME, e.g., HG002
-fa: REFERENCE_GENOME.FASTA
-fq: READ_SAMPLE.FQ.GZ
-hap1: HAPLOTYPE1.FASTA
-hap2: HAPLOTYPE2.FASTA
-trf: TRF.BED
-wd: OUTPUT_DIRECTORY
+name: HG002
+fa: /nfs/projects6/chm13v2.0.fa
+fq: /nfs/projects6/hg002/hprc-hifi-19k.fq.gz
+hap1: /nfs/projects6/hg002/HG002.1.fa
+hap2: /nfs/projects6/hg002/HG002.2.fa
+trf: /nfs/projects6/human_chm13v2.0_maskedY_rCRS.trf.bed
+strat:
+  easy: /nfs/projects6/giab-strat/CHM13_notinalldifficultregions.bed
+  hard: /nfs/projects6/giab-strat/CHM13_alldifficultregions.bed
+wd: /nfs/projects6/hg002/15k-36x-seqII2.0/t2t
 truths:
   - dipcall
   - svim-asm
   - hapdiff
-  # - severus-paper # can use this against hg19
 callers:
   - sniffles
   - cutesv-w2
-  - cutesv-w5
-  # - cutesv-w10 # default
+  - cutesv-w4
+  - cutesv-w10 # default
   - SVDSS-w2 # default
-  # - SVDSS-w4
-  - SVDSS2-q0.98-w2
+  - SVDSS-w4
   - SVDSS2ht-q0.98-w2
-  - SVDSS2-q0.99-w2
-  # - SVDSS2-q0.98-w4
+  - SVDSS2ht-q0.98-w4
   - severus-w2
   - severus-w3 # default
+  - severus-w4
   - debreak
   - svisionpro-w2
+  - svisionpro-w4
   - svisionpro-w5 # default

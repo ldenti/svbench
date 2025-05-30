@@ -14,6 +14,9 @@ HAP2 = config["hap2"]
 WD = config["wd"]
 TRF = config["trf"]
 
+EASYBED = config["strat"]["easy"]
+HARDBED = config["strat"]["hard"]
+
 TRUTHS = config["truths"]
 CALLERS = config["callers"]
 
@@ -33,11 +36,11 @@ include: "rules/svdss.smk"
 # postprocessing
 truvari_options = {
     "def": "--passonly --dup-to-ins",
-    # "nopass": "--dup-to-ins",
     "nosim": "--passonly --dup-to-ins -p 0",
-    # "cus":"--passonly --dup-to-ins -s 50 -S 50",
     "bed": "--passonly --dup-to-ins --includebed "
     + DIPBED,  # XXX: DIPBED is actually not an input for truvari rule
+    "easybed": "--passonly --dup-to-ins --includebed " + EASYBED,
+    "hardbed": "--passonly --dup-to-ins --includebed " + HARDBED,
     "sev": "--passonly --typeignore --dup-to-ins -p 0 -s 30 -S 0",
 }
 

@@ -26,13 +26,37 @@ For now, these scripts assume `truvari` and `seaborn` to be installed.
 ``` sh
 WD=$(grep "wd:" ./config/config.yml | cut -f2 -d" ")
 
-# summarize F1 in a single plot (assuming max 3 truth callsets)
-python3 plot_truvari.py matrix $WD
+# plot statistics from truth callsets (from single reference run)
+python3 scripts/plot_truth.py $WD/truths > dipcall-170bp.bed
+# intersect dipcall peak around 170bp with Centromeric Satellite Annotation
+# https://genome.cse.ucsc.edu/cgi-bin/hgTrackUi?db=hub_3671779_hs1&c=chr12&g=hub_3671779_censat
+bedtools intersect -a dipcall-170bp.bed -b censat.bed -wb | cut -f 7 | sort | uniq -c
 
-# plot statistics from truth callsets
-python3 scripts/plot_truth.py $WD/truths
 bash run_truvari.sh $WD/truths
+
+# single genome heatmap
 python3 scripts/plot_comparison.py $WD/truths
+# 3 genomes heatmap (jaccard similarity)
+python3 scripts/plot_comparison.py avga $t2t_wd/truths $hg38_wd/truths $hg19_wd/truths
+# 3 genomes heatmap (precision)
+python3 scripts/plot_comparison.py avgp $t2t_wd/truths $hg38_wd/truths $hg19_wd/truths
+
+# summarize F1 in a single plot
+python3 scripts/plot_truvari.py all $t2t_wd $hg38_wd $hg19_wd
+# rank map depending on F1
+python3 scripts/plot_truvari.py rank $t2t_wd t2t
+
+---
+
+# Check how many calls from hapdiff are in dipcall "non-confident" regions (0s in the histogram)
+bedtools intersect -a $WD/comparison-def/dipcall-against-hapdiff/fn.vcf.gz -b $WD/truths/dipcall.bed -c | cut -f11 | sort -n | uniq -c
+
+---
+
+# Run last dipcall step on hapdiff .bam files and check
+htsbox pileup -q20 -evcf $ref $WD/truths/hapdiff_pat.bam $WD/truths/hapdiff_mat.bam | dipcall-aux.js vcfpair - | bcftools view -v indels -i '(ILEN <= -50 || ILEN >= 50)' | bcftools norm -Oz --multiallelics - > $WD/truths/hapdiff.htsbox.vcf.gz
+tabix -p vcf $WD/truths/hapdiff.htsbox.vcf.gz
+truvari bench -s 50 -S 50 -c $WD/truths/hapdiff.htsbox.vcf.gz -b $WD/truths/hapdiff.vcf.gz -o OUT
 ```
 
 ### Evaluation against GIAB v1.1

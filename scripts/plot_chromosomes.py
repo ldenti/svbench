@@ -280,6 +280,7 @@ def main():
     plt.xlabel("Chromosome Position (Mbp)", fontsize=14)
     plt.ylabel("Truth", fontsize=14)
 
+    plt.tight_layout()
     # if savefig is True:
     #     plt.savefig(f'{species}_karyopype.png')
     plt.show()

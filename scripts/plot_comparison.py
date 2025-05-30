@@ -42,7 +42,7 @@ def main_avg(acc=False):
         ("svim-asm", "hapdiff"),
     ]
 
-    fig, axes = plt.subplots(1, 3)
+    fig, axes = plt.subplots(1, 3, figsize=(9, 4))
     for i, ddir in enumerate(sys.argv[1:]):
         # assuming this order: t2t, hg38, and hg19
         M3 = [[0 for _ in labels] for _ in labels]
@@ -80,6 +80,8 @@ def main_avg(acc=False):
     x_titles = ["T2T", "hg38", "hg19"]
     for ax, title in zip(axes, x_titles):
         ax.set_title(title)
+        ax.tick_params(axis="x", labelrotation=0)
+        ax.tick_params(axis="y", labelrotation=90)
         ax.set_xlabel("How much of this...")
     axes[0].set_ylabel("...matches with this")
     plt.tight_layout()

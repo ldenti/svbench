@@ -24,6 +24,12 @@ BENCHS = [
     # "truvari-sev",
 ]
 
+BENCHS = [
+    "truvari-def",
+    "truvari-easybed",
+    "truvari-hardbed",
+]
+
 
 def parse_ddir(ddir, refseq=""):
     data = []
@@ -90,7 +96,7 @@ def main_rankmap():
     plt.show()
 
 
-def main_matrix2():
+def main_matrix():
     sns.set(font_scale=0.7)
     t2t_ddir = sys.argv[1]
     hg38_ddir = sys.argv[2]
@@ -123,14 +129,14 @@ def main_matrix2():
         col_order=co,
         sharex=True,
         sharey=True,
-        height=4,
-        aspect=0.6,
+        height=2.5,
+        aspect=1.7,
         margin_titles=True,
         legend_out=False,
     )
 
-    g.tick_params(axis="x", labelrotation=90)  # set_xticklabels(rotation=90)
-    g.set(ylim=(40, 100))
+    g.tick_params(axis="x", labelrotation=45)  # set_xticklabels(rotation=90)
+    g.set(ylim=(30, 100))
 
     for row in g.axes:
         for ax in row:
@@ -157,7 +163,7 @@ def main_matrix2():
     plt.show()
 
 
-def main_matrix():
+def main_matrix1():
     sns.set(font_scale=0.7)
     ddir = sys.argv[1]
 
@@ -234,12 +240,12 @@ def main_bar():
 
 
 if __name__ == "__main__":
-    if sys.argv[1] == "all":
+    if sys.argv[1] == "all1":
+        sys.argv.pop(0)
+        main_matrix1()
+    elif sys.argv[1] == "all":
         sys.argv.pop(0)
         main_matrix()
-    elif sys.argv[1] == "all2":
-        sys.argv.pop(0)
-        main_matrix2()
     elif sys.argv[1] == "rank":
         sys.argv.pop(0)
         main_rankmap()

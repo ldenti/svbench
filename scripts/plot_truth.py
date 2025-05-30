@@ -4,12 +4,10 @@ from collections import Counter
 
 from pysam import VariantFile
 import pandas as pd
-import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-font = {"size": 31}
-matplotlib.rc("font", **font)
+sns.set(font_scale=2)
 
 
 sns.set(style="whitegrid")
@@ -43,13 +41,13 @@ def main():
             gt2 = gt2 if gt2 != None else 0
 
             if abs(l) >= 50 and (gt1 > 0 or gt2 > 0):
-                # if name == "dipcall" and abs(l) >= 167 and abs(l) <= 171:
-                #     print(
-                #         record.contig,
-                #         record.pos,
-                #         record.pos + abs(l) if l < 0 else record.pos + 1,
-                #         sep="\t",
-                #     )
+                if abs(l) >= 167 and abs(l) <= 171:
+                    print(
+                        record.contig,
+                        record.pos,
+                        record.pos + abs(l) if l < 0 else record.pos + 1,
+                        sep="\t",
+                    )
                 df.append(
                     [
                         name,
@@ -66,19 +64,21 @@ def main():
 
     df = pd.DataFrame(df, columns=["Truth", "Chrom", "Pos", "Len", "Type", "GT"])
 
-    fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4)
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(9, 9))
 
     # number of variants per truthset
     df2 = df.groupby(["Truth", "Type"]).count()
     sns.barplot(
         data=df2,
         x="Truth",
+        order=TRUTHS,
         y="Chrom",
         hue="Type",
         palette="Set2",
         ax=ax1,
     )
     ax1.set_ylabel("")  # Count
+    ax1.legend(loc=4)
     ax1.bar_label(ax1.containers[0])
     ax1.bar_label(ax1.containers[1])
     ax1.set_title("(a)")
@@ -104,8 +104,11 @@ def main():
             gtdf.append([truth, gt, len(df[(df["Truth"] == truth) & (df["GT"] == b)])])
     gtdf = pd.DataFrame(gtdf, columns=["Truth", "GT", "Count"])
 
-    sns.barplot(gtdf, x="Truth", y="Count", hue="GT", palette="Set2", ax=ax3)
+    sns.barplot(
+        gtdf, x="Truth", order=TRUTHS, y="Count", hue="GT", palette="Set2", ax=ax3
+    )
     ax3.set_ylabel("")  # Count
+    ax3.legend(loc=4)
     ax3.set_title("(c)")
 
     # neighbor distribution per truthset
@@ -124,8 +127,8 @@ def main():
         d = {}
         for x in neighbors:
             k = str(x)
-            if x >= 3:
-                k = "3+"
+            if x >= 2:
+                k = "2+"
             d[k] = d[k] + 1 if k in d else 1
         for k, v in d.items():
             df2.append([truth, k, v])
@@ -134,7 +137,7 @@ def main():
     sns.barplot(
         data=df2,
         x=f"#Neighbors-{nb_dist}bp",
-        order=["0", "1", "2", "3+"],
+        order=["0", "1", "2+"],
         y="Count",
         hue="Truth",
         ax=ax4,

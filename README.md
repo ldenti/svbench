@@ -26,6 +26,9 @@ For now, these scripts assume `truvari` and `seaborn` to be installed.
 ``` sh
 WD=$(grep "wd:" ./config/config.yml | cut -f2 -d" ")
 
+# plot INS/DEL and size distribution of assembly-based callsets
+python3 scripts/plot_distr.py $t2t_wd/truths $hg38_wd/truths $hg19_wd/truths
+
 # plot statistics from truth callsets (from single reference run)
 python3 scripts/plot_truth.py $WD/truths > dipcall-170bp.bed
 # intersect dipcall peak around 170bp with Centromeric Satellite Annotation

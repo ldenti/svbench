@@ -257,3 +257,62 @@ rule svisionpro_severus:
         cp {input.vcf} {output.vcf}
         cp {input.vcf}.tbi {output.vcf}.tbi
         """
+
+
+######################################################################
+######################################################################
+######################################################################
+
+
+rule sawfish:
+    input:
+        fa=REF,
+        bam=BAM,
+    output:
+        odir=directory(pjoin(WD, "sawfish")),
+    log:
+        time=pjoin(WD, "times", "sawfish-discover.time"),
+    conda:
+        "../envs/sawfish.yml"
+    threads: workflow.cores
+    shell:
+        """
+        sawfish discover --min-indel-size 50 --min-sv-mapq 20 --threads 16 --ref {input.fa} --bam {input.bam} --output-dir {output.odir}
+        # --min-sv-mapq 10
+        """
+
+
+# --expected-cn ${DISTRO_ROOT_DIR}/data/expected_cn/expected_cn.hg38.XX.bed \
+# --cnv-excluded-regions ${DISTRO_ROOT_DIR}/data/cnv_excluded_regions/annotation_and_common_cnv.hg38.bed.gz
+
+
+rule sawfish_jointcall:
+    input:
+        odir=pjoin(WD, "sawfish"),
+    output:
+        vcf=pjoin(WD, "sawfish-final", "genotyped.sv.vcf.gz"),
+    params:
+        odir=pjoin(WD, "sawfish-final"),
+    log:
+        time=pjoin(WD, "times", "sawfish-jointcall.time"),
+    conda:
+        "../envs/sawfish.yml"
+    threads: workflow.cores
+    shell:
+        """
+        sawfish joint-call --threads 16 --sample {input.odir} --output-dir {params.odir}
+        """
+
+
+rule sawfish_post:
+    input:
+        vcf=pjoin(WD, "sawfish-final", "genotyped.sv.vcf.gz"),
+    output:
+        vcf=pjoin(WD, "callsets", "sawfish.vcf.gz"),
+    conda:
+        "../envs/bcftools.yml"
+    shell:
+        """
+        bcftools view -Oz --include "INFO/SVTYPE='DEL' | INFO/SVTYPE='INS' | INFO/SVTYPE='DUP'" {input.vcf} > {output.vcf}
+        tabix -p vcf {output.vcf}
+        """

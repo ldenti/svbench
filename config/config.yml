@@ -29,3 +29,4 @@ callers:
   - svisionpro-w4
   - svisionpro-w5 # default
   # - svisionpro-severus # uncomment for hg19
+  - sawfish

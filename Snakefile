@@ -51,8 +51,6 @@ include: "rules/minda.smk"
 
 rule all:
     input:
-        # pjoin(WD, "truvari-all.f1.png"),
-        pjoin(WD, "truths", "stats.png"),
         # from truvari.smk
         expand(
             pjoin(WD, "{truth}.truvari-{opt}.csv.png"),
@@ -73,19 +71,19 @@ rule copy_truth:
         """
 
 
-rule plot_truth:
-    input:
-        expand(pjoin(WD, "truths", "{truth}.vcf.gz"), truth=TRUTHS),
-    output:
-        pjoin(WD, "truths", "stats.png"),
-    params:
-        tdir=pjoin(WD, "truths"),
-    conda:
-        "./envs/seaborn.yml"
-    shell:
-        """
-        python3 ./scripts/plot_truth.py {params.tdir}
-        """
+# rule plot_truth:
+#     input:
+#         expand(pjoin(WD, "truths", "{truth}.vcf.gz"), truth=TRUTHS),
+#     output:
+#         pjoin(WD, "truths", "stats.png"),
+#     params:
+#         tdir=pjoin(WD, "truths"),
+#     conda:
+#         "./envs/seaborn.yml"
+#     shell:
+#         """
+#         python3 ./scripts/plot_truth.py {params.tdir}
+#         """
 
 
 rule plot_truvari_all:

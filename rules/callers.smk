@@ -244,3 +244,16 @@ rule svisionpro_post:
         bcftools sort {input.vcf} | bcftools view -Oz --exclude "INFO/SVTYPE='BND'" > {output.vcf}
         tabix -p vcf {output.vcf}
         """
+
+
+rule svisionpro_severus:
+    input:
+        vcf=pjoin(os.getcwd(), "data", "svision.vcf.gz"),
+    output:
+        vcf=pjoin(WD, "callsets", "svisionpro-severus.vcf.gz"),
+    threads: 1
+    shell:
+        """
+        cp {input.vcf} {output.vcf}
+        cp {input.vcf}.tbi {output.vcf}.tbi
+        """

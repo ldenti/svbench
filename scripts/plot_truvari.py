@@ -24,11 +24,11 @@ BENCHS = [
     # "truvari-sev",
 ]
 
-BENCHS = [
-    "truvari-def",
-    "truvari-easybed",
-    "truvari-hardbed",
-]
+# BENCHS = [
+#     "truvari-def",
+#     "truvari-easybed",
+#     "truvari-hardbed",
+# ]
 
 
 def parse_ddir(ddir, refseq=""):
@@ -72,6 +72,7 @@ def main_rankmap():
     fig, axes = plt.subplots(1, 3)
     for i, bench in enumerate(BENCHS):
         M = [[len(tools) for _ in truths] for _ in tools]
+        M_annot = [["-" for _ in truths] for _ in tools]
         for col, truth in enumerate(truths):
             df2 = df[(df["Bench"] == bench) & (df["Truth"] == truth)]
             print(df2)
@@ -80,10 +81,12 @@ def main_rankmap():
             print(f1s)
             for rank, (tool, _) in enumerate(f1s, 1):
                 M[tools.index(tool)][col] = rank
+                M_annot[tools.index(tool)][col] = str(rank)
         sns.heatmap(
             M,
             ax=axes[i],
-            annot=True,
+            annot=M_annot,
+            fmt="",
             xticklabels=truths,
             yticklabels=tools if i == 0 else False,
             cbar=False,
@@ -136,7 +139,7 @@ def main_matrix():
     )
 
     g.tick_params(axis="x", labelrotation=45)  # set_xticklabels(rotation=90)
-    g.set(ylim=(30, 100))
+    g.set(ylim=(0, 100))
 
     for row in g.axes:
         for ax in row:
@@ -198,7 +201,7 @@ def main_matrix1():
         order=tools,
     )
     g.tick_params(axis="x", labelrotation=90)  # set_xticklabels(rotation=90)
-    g.set(ylim=(40, 100))
+    g.set(ylim=(0, 100))
 
     for row in g.axes:
         for ax in row:

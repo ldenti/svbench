@@ -10,6 +10,7 @@ sns.set(style="whitegrid")
 TOOLS = [
     "cutesv-w4",
     "debreak",
+    "sawfish",
     "severus-w4",
     "sniffles",
     "svisionpro-w4",
@@ -64,7 +65,7 @@ def main():
             y="F1",
             ax=axes[1][col],
             hue="Tool",
-            alpha=0.75,
+            # alpha=0.75,
         )
 
         axes[0][col].set_title(ref)

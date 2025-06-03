@@ -10,6 +10,7 @@ sns.set(style="whitegrid")
 TOOLS = [
     "cutesv-w4",
     "debreak",
+    "sawfish",
     "severus-w4",
     "sniffles",
     "svisionpro-w4",

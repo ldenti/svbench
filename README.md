@@ -27,10 +27,12 @@ For now, these scripts assume `truvari` and `seaborn` to be installed.
 WD=$(grep "wd:" ./config/config.yml | cut -f2 -d" ")
 
 # plot INS/DEL and size distribution of assembly-based callsets
-python3 scripts/plot_distr.py $t2t_wd/truths $hg38_wd/truths $hg19_wd/truths
+python3 scripts/plot_truth.py distr $t2t_wd/truths $hg38_wd/truths $hg19_wd/truths
+# plot GT and neighboring from assembly-based callsets
+python3 scripts/plot_truth.py gt $t2t_wd/truths $hg38_wd/truths $hg19_wd/truths
 
 # plot statistics from truth callsets (from single reference run)
-python3 scripts/plot_truth.py $WD/truths > dipcall-170bp.bed
+python3 scripts/plot_truth_single.py $WD/truths > dipcall-170bp.bed
 # intersect dipcall peak around 170bp with Centromeric Satellite Annotation
 # https://genome.cse.ucsc.edu/cgi-bin/hgTrackUi?db=hub_3671779_hs1&c=chr12&g=hub_3671779_censat
 bedtools intersect -a dipcall-170bp.bed -b censat.bed -wb | cut -f 7 | sort | uniq -c
@@ -49,6 +51,12 @@ python3 scripts/plot_truvari.py all $t2t_wd $hg38_wd $hg19_wd
 # rank map depending on F1
 python3 scripts/plot_truvari.py rank $t2t_wd t2t
 
+# F1 results on GIAB stratification
+# uncomment lines 28:32 in scripts/plot_truvari.py , then run:
+python3 scripts/plot_truvari.py all $t2t_wd $hg38_wd $hg19_wd
+
+# Compare results on hg19 between "our" callsets and severus callsets
+bash ./scripts/build_hg19_comparison_table.sh $hg19_wd
 ---
 
 # Check how many calls from hapdiff are in dipcall "non-confident" regions (0s in the histogram)
@@ -70,8 +78,7 @@ tabix -p vcf CHM13v2.0-HG2.sv.vcf.gz
 bash ./scripts/truvari_on_giab-v1.1.sh $WD/ CHM13v2.0-HG2.sv.vcf.gz CHM13v2.0_HG2-T2TQ100-V1.1_stvar.benchmark.bed
 python3 ./scripts/format_truvari.py $WD/giab-v1.1/ > $WD/giab-v1.1.csv
 
-paste -d"," <(cut -f1,5,6,7 -d"," hg19.csv) <(cut -f5,6,7 -d"," hg38.csv) <(cut -f5,6,7 -d"," t2t.csv)
-
+python3 ./scripts/plot_pr.py giab-v1.1.t2t.csv giab-v1.1.hg38.csv giab-v1.1.hg19.csv
 ```
 
 ### Supported tools
@@ -91,6 +98,7 @@ SV calling from long reads:
 * debreak (v1.3)
 * SVision-pro (v2.4)
 * Severus (v1.4.0)
+* sawfish (v2.0.0)
 
 SV calling from diploid assemblies:
 * dipcall (v0.3)

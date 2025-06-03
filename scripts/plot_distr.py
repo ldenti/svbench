@@ -12,11 +12,14 @@ TRUTHS = ["dipcall", "svim-asm", "hapdiff"]
 
 
 def parse_dir(ddir, refseq=""):
+    # we may not need this dict and do everything on df but it's more convenient to me
+    truths = {}
     data = []
     for vcf_fn in glob.glob(f"{ddir}/*.vcf.gz"):
         name = vcf_fn.split("/")[-1].split(".")[0]
         if name not in TRUTHS:
             continue
+        truths[name] = {}
         for record in VariantFile(vcf_fn):
             l = len(record.alts[0]) - len(record.ref)
             # filters=[x.name for x in record.filter.values()]
@@ -41,18 +44,114 @@ def parse_dir(ddir, refseq=""):
                         gt1 == gt2,
                     ]
                 )
-    return data
+                if record.contig not in truths[name]:
+                    truths[name][record.contig] = []
+                truths[name][record.contig].append(record.pos)
+    return data, truths
 
 
-def main():
+def main_gt():
+    nb_dist = 50
+
+    fig, axes = plt.subplots(2, 3, figsize=(10, 5))
+    refseqs = ["t2t", "hg38", "hg19"]
+    for i, vcf_dir in enumerate(sys.argv[1:4]):
+        # we may not need this dict and do everything on df but it's more convenient to me
+        df, truths = parse_dir(vcf_dir)
+        df = pd.DataFrame(
+            df, columns=["x", "Truth", "Chrom", "Pos", "Len", "Type", "GT"]
+        )
+
+        # GT distribution
+        gtdf = []
+        for truth in truths:
+            for b in [True, False]:
+                gt = "1/1" if b else "0/1"
+                gtdf.append(
+                    [truth, gt, len(df[(df["Truth"] == truth) & (df["GT"] == b)])]
+                )
+        gtdf = pd.DataFrame(gtdf, columns=["Truth", "GT", "Count"])
+
+        sns.barplot(
+            gtdf,
+            x="Truth",
+            order=TRUTHS,
+            y="Count",
+            hue="GT",
+            palette="Set2",
+            ax=axes[0][i],
+            legend=True if i == 2 else None,
+        )
+        axes[0][i].set_ylim(0, 31000)
+        axes[0][i].set_xlabel("")
+        axes[0][i].set_ylabel("")  # Count
+        if i == 0:
+            axes[0][i].set_ylabel("(a)")
+        # if i != 0:
+        #     # remove y-ticks
+        #     axes[0][i].set_yticklabels([])
+        if i == 2:
+            # move legends
+            sns.move_legend(axes[0][i], "center left", bbox_to_anchor=(1, 0.5))
+
+        # ax1.bar_label(ax1.containers[0])
+        # ax1.bar_label(ax1.containers[1])
+        axes[0][i].set_title(refseqs[i])
+
+        # neighbor distribution per truthset
+        df2 = []
+        for truth in truths:
+            neighbors = []
+            for chrom in truths[truth]:
+                last_p = truths[truth][chrom][0]
+                neighbors.append(0)
+                for p in truths[truth][chrom][1:]:
+                    if p - last_p > nb_dist:
+                        neighbors.append(0)
+                    else:
+                        neighbors[-1] += 1
+                    last_p = p
+            d = {}
+            for x in neighbors:
+                k = str(x)
+                if x >= 2:
+                    k = "2+"
+                d[k] = d[k] + 1 if k in d else 1
+            for k, v in d.items():
+                df2.append([truth, k, v])
+
+        df2 = pd.DataFrame(df2, columns=["Truth", f"#Neighbors-{nb_dist}bp", "Count"])
+        sns.barplot(
+            data=df2,
+            x=f"#Neighbors-{nb_dist}bp",
+            order=["0", "1", "2+"],
+            y="Count",
+            hue="Truth",
+            ax=axes[1][i],
+            legend=True if i == 2 else None,
+        )
+        axes[1][i].set_ylim(0, 35000)
+        axes[1][i].set_ylabel("")  # Count
+        if i == 0:
+            axes[1][i].set_ylabel("(b)")
+        if i == 2:
+            # move legends
+            sns.move_legend(axes[1][i], "center left", bbox_to_anchor=(1, 0.5))
+
+    plt.tight_layout()
+    plt.show()
+    # plt.savefig(vcf_dir + "/stats.png")
+
+
+def main_distr():
     t2t_ddir = sys.argv[1]
     hg38_ddir = sys.argv[2]
     hg19_ddir = sys.argv[3]
 
     df = []
-    df += parse_dir(t2t_ddir, "t2t")
-    df += parse_dir(hg38_ddir, "hg38")
-    df += parse_dir(hg19_ddir, "hg19")
+    df += parse_dir(t2t_ddir, "t2t")[0]
+    df += parse_dir(hg38_ddir, "hg38")[0]
+    df += parse_dir(hg19_ddir, "hg19")[0]
 
     REFSEQS = ["t2t", "hg38", "hg19"]
 
@@ -78,6 +177,8 @@ def main():
         axes[0][i].set_xlabel("")  # Truth
         axes[0][i].set_ylim(0, 19000)  # Count
         axes[0][i].set_ylabel("")  # Count
+        if i == 0:
+            axes[0][i].set_ylabel("(a)")
         if i != 0:
             # remove y-ticks
             axes[0][i].set_yticklabels([])
@@ -102,6 +203,8 @@ def main():
         axes[1][i].set_xlabel("Length")
         axes[1][i].set_ylabel("")  # Count
         axes[1][i].set_ylim(0, 2000)
+        if i == 0:
+            axes[1][i].set_ylabel("(b)")
         if i != 0:
             # remove y-ticks
             axes[1][i].set_yticklabels([])
@@ -113,4 +216,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    mode = sys.argv.pop(1)
+    if mode == "distr":
+        main_distr()
+    elif mode == "gt":
+        main_gt()

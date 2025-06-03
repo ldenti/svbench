@@ -28,5 +28,11 @@ callers:
   - svisionpro-w2
   - svisionpro-w4
   - svisionpro-w5 # default
-  # - svisionpro-severus # uncomment for hg19
   - sawfish
+  # uncomment for hg19
+  # - svdss-severus
+  # - cutesv-severus
+  # - debreak-severus
+  # - severus-severus
+  # - sniffles-severus
+  # - svisionpro-severus

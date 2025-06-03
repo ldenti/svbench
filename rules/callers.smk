@@ -246,25 +246,12 @@ rule svisionpro_post:
         """
 
 
-rule svisionpro_severus:
-    input:
-        vcf=pjoin(os.getcwd(), "data", "svision.vcf.gz"),
-    output:
-        vcf=pjoin(WD, "callsets", "svisionpro-severus.vcf.gz"),
-    threads: 1
-    shell:
-        """
-        cp {input.vcf} {output.vcf}
-        cp {input.vcf}.tbi {output.vcf}.tbi
-        """
-
-
 ######################################################################
 ######################################################################
 ######################################################################
 
 
-rule sawfish:
+rule sawfish_discover:
     input:
         fa=REF,
         bam=BAM,

@@ -27,6 +27,8 @@ include: "rules/callers-asm.smk"
 include: "rules/preprocess.smk"
 # callers from BAM
 include: "rules/callers.smk"
+# callsets from severus paper
+include: "rules/callers-severus-hg19.smk"
 # SVDSS
 include: "rules/svdss2.smk"
 include: "rules/svdss2-ht.smk"

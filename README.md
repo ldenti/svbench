@@ -73,13 +73,16 @@ truvari bench -s 50 -S 50 -c $WD/truths/hapdiff.htsbox.vcf.gz -b $WD/truths/hapd
 
 ### Evaluation against GIAB (v1.1 and v0.6)
 ```
-# Get *_stvar.vcf.gz and *_stvar.benchmark.bed from https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_HG002_DraftBenchmark_defrabbV0.019-20241113/
+# Get *_stvar.vcf.gz and *_stvar.benchmark.bed
+# from https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_HG002_DraftBenchmark_defrabbV0.019-20241113/
+# run this for all three reference sequences
 bcftools view -Oz -v indels -i '(ILEN <= -50 || ILEN >= 50)' CHM13v2.0_HG2-T2TQ100-V1.1_stvar.vcf.gz > CHM13v2.0-HG2.sv.vcf.gz
 tabix -p vcf CHM13v2.0-HG2.sv.vcf.gz
-bash ./scripts/truvari_on_giab.sh $hg19_wd/ CHM13v2.0-HG2.sv.vcf.gz CHM13v2.0_HG2-T2TQ100-V1.1_stvar.benchmark.bed 11
-python3 ./scripts/format_truvari.py $WD/giab-v1.1/ > $WD/giab-v1.1.csv
+bash ./scripts/truvari_on_giab.sh $t2t_wd/ CHM13v2.0-HG2.sv.vcf.gz CHM13v2.0_HG2-T2TQ100-V1.1_stvar.benchmark.bed 11
+python3 ./scripts/format_truvari.py $t2t_wd/giab-v1.1/ > $t2t_wd/giab-v1.1.csv
 
-# Get HG002_SVs_Tier1_v0.6.{vcf.gz,vcf.gz.tbi,bed} from https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_SVs_Integration_v0.6/
+# Get HG002_SVs_Tier1_v0.6.{vcf.gz,vcf.gz.tbi,bed}
+# from https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_SVs_Integration_v0.6/
 bash ./scripts/truvari_on_giab.sh $hg19_wd/ HG002_SVs_Tier1_v0.6.vcf.gz HG002_SVs_Tier1_v0.6.bed 06
 python3 ./scripts/format_truvari.py $WD/giab-v0.6/ > $hg_19wd/giab-v0.6.csv
 

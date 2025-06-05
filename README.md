@@ -12,7 +12,7 @@ This framework is provided as a Snakemake pipeline. Additional python scripts ca
 * seaborn (if you want plots)
 
 ``` sh
-mamba create -c bioconda -c conda-forge -n svbench snakemake
+mamba create -c bioconda -c conda-forge -n svbench snakemake-minimal seaborn
 conda activate svbench
 # edit config/config.yml
 snakemake -c 16 --use-conda --configfile config/config.yml -p [-n]
@@ -21,8 +21,8 @@ WD=$(grep "wd:" ./config/config.yml | cut -f2 -d" ")
 ls $WD/*.csv $WD/*.png
 ```
 
-### Other analyses
-For now, these scripts assume `truvari` and `seaborn` to be installed.
+### Analyses
+These scripts assume `truvari` and `seaborn` to be installed.
 ``` sh
 WD=$(grep "wd:" ./config/config.yml | cut -f2 -d" ")
 
@@ -57,6 +57,7 @@ python3 scripts/plot_truvari.py all $t2t_wd $hg38_wd $hg19_wd
 
 # Compare results on hg19 between "our" callsets and severus callsets
 bash ./scripts/build_hg19_comparison_table.sh $hg19_wd
+
 ---
 
 # Check how many calls from hapdiff are in dipcall "non-confident" regions (0s in the histogram)
@@ -70,16 +71,52 @@ tabix -p vcf $WD/truths/hapdiff.htsbox.vcf.gz
 truvari bench -s 50 -S 50 -c $WD/truths/hapdiff.htsbox.vcf.gz -b $WD/truths/hapdiff.vcf.gz -o OUT
 ```
 
-### Evaluation against GIAB v1.1
+### Evaluation against GIAB (v1.1 and v0.6)
 ```
 # Get *_stvar.vcf.gz and *_stvar.benchmark.bed from https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_HG002_DraftBenchmark_defrabbV0.019-20241113/
 bcftools view -Oz -v indels -i '(ILEN <= -50 || ILEN >= 50)' CHM13v2.0_HG2-T2TQ100-V1.1_stvar.vcf.gz > CHM13v2.0-HG2.sv.vcf.gz
 tabix -p vcf CHM13v2.0-HG2.sv.vcf.gz
-bash ./scripts/truvari_on_giab-v1.1.sh $WD/ CHM13v2.0-HG2.sv.vcf.gz CHM13v2.0_HG2-T2TQ100-V1.1_stvar.benchmark.bed
+bash ./scripts/truvari_on_giab.sh $hg19_wd/ CHM13v2.0-HG2.sv.vcf.gz CHM13v2.0_HG2-T2TQ100-V1.1_stvar.benchmark.bed 11
 python3 ./scripts/format_truvari.py $WD/giab-v1.1/ > $WD/giab-v1.1.csv
 
-python3 ./scripts/plot_pr.py giab-v1.1.t2t.csv giab-v1.1.hg38.csv giab-v1.1.hg19.csv
+# Get HG002_SVs_Tier1_v0.6.{vcf.gz,vcf.gz.tbi,bed} from https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_SVs_Integration_v0.6/
+bash ./scripts/truvari_on_giab.sh $hg19_wd/ HG002_SVs_Tier1_v0.6.vcf.gz HG002_SVs_Tier1_v0.6.bed 06
+python3 ./scripts/format_truvari.py $WD/giab-v0.6/ > $hg_19wd/giab-v0.6.csv
+
+python3 ./scripts/plot_pr.py giab-v1.1.t2t.csv giab-v1.1.hg38.csv giab-v1.1.hg19.csv giab-v0.6.csv
 ```
+
+### Data
+- Reference sequences and annotations:
+```
+# hg19
+wget ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz
+wget https://github.com/fritzsedlazeck/Sniffles/blob/master/annotations/human_hs37d5.trf.bed
+wget https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/genome-stratifications/v3.6/GRCh37@all/Union/GRCh37_alldifficultregions.bed.gz
+wget https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/genome-stratifications/v3.6/GRCh37@all/Union/GRCh37_notinalldifficultregions.bed.gz
+
+# hg38
+wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz
+wget https://raw.githubusercontent.com/PacificBiosciences/pbsv/refs/heads/master/annotations/human_GRCh38_no_alt_analysis_set.trf.bed
+wget https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/genome-stratifications/v3.6/GRCh38@all/Union/GRCh38_notinalldifficultregions.bed.gz
+wget https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/genome-stratifications/v3.6/GRCh38@all/Union/GRCh38_alldifficultregions.bed.gz
+
+# t2t
+wget https://s3-us-west-2.amazonaws.com/human-pangenomics/T2T/CHM13/assemblies/analysis_set/chm13v2.0.fa.gz
+wget https://raw.githubusercontent.com/PacificBiosciences/pbsv/master/annotations/human_chm13v2.0_maskedY_rCRS.trf.bed
+wget https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/genome-stratifications/v3.6/CHM13@all/Union/CHM13_alldifficultregions.bed.gz
+wget https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/genome-stratifications/v3.6/CHM13@all/Union/CHM13_notinalldifficultregions.bed.gz
+```
+
+- HG002 assembly (from HPRC):
+```
+curl -o HPRC-yr1.agc https://zenodo.org/record/5826274/files/HPRC-yr1.agc
+agc getset ../../HPRC-yr1.agc HG002.1 > HG002.1.fa
+agc getset ../../HPRC-yr1.agc HG002.2 > HG002.2.fa
+```
+
+- HG002 HiFi sample: `m64012_190920_173625`, `m64012_190921_234837`, `m64015_190920_185703`, and `m64015_190922_010918` (from [HPRC](https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=working/HPRC_PLUS/HG002/raw_data/PacBio_HiFi/15kb/))
+
 
 ### Supported tools
 Read alignment:

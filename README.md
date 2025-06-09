@@ -26,10 +26,8 @@ These scripts assume `truvari` and `seaborn` to be installed.
 ``` sh
 WD=$(grep "wd:" ./config/config.yml | cut -f2 -d" ")
 
-# plot INS/DEL and size distribution of assembly-based callsets
-python3 scripts/plot_truth.py distr $t2t_wd/truths $hg38_wd/truths $hg19_wd/truths
-# plot GT and neighboring from assembly-based callsets
-python3 scripts/plot_truth.py gt $t2t_wd/truths $hg38_wd/truths $hg19_wd/truths
+# plot figure on assembly-based callsets
+python3 scripts/plot_truth.py $t2t_wd/truths $hg38_wd/truths $hg19_wd/truths
 
 # plot statistics from truth callsets (from single reference run)
 python3 scripts/plot_truth_single.py $WD/truths > dipcall-170bp.bed
@@ -39,12 +37,8 @@ bedtools intersect -a dipcall-170bp.bed -b censat.bed -wb | cut -f 7 | sort | un
 
 bash run_truvari.sh $WD/truths
 
-# single genome heatmap
-python3 scripts/plot_comparison.py $WD/truths
-# 3 genomes heatmap (jaccard similarity)
-python3 scripts/plot_comparison.py avga $t2t_wd/truths $hg38_wd/truths $hg19_wd/truths
-# 3 genomes heatmap (precision)
-python3 scripts/plot_comparison.py avgp $t2t_wd/truths $hg38_wd/truths $hg19_wd/truths
+# 3 genomes heatmap (jaccard similarity/accuracy)
+python3 scripts/plot_comparison.py $t2t_wd/truths $hg38_wd/truths $hg19_wd/truths
 
 # summarize F1 in a single plot
 python3 scripts/plot_truvari.py all $t2t_wd $hg38_wd $hg19_wd
@@ -52,8 +46,7 @@ python3 scripts/plot_truvari.py all $t2t_wd $hg38_wd $hg19_wd
 python3 scripts/plot_truvari.py rank $t2t_wd t2t
 
 # F1 results on GIAB stratification
-# uncomment lines 28:32 in scripts/plot_truvari.py , then run:
-python3 scripts/plot_truvari.py all $t2t_wd $hg38_wd $hg19_wd
+python3 scripts/plot_giabstrat.py $t2t_wd $hg38_wd $hg19_wd
 
 # Compare results on hg19 between "our" callsets and severus callsets
 bash ./scripts/build_hg19_comparison_table.sh $hg19_wd

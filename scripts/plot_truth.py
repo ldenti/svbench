@@ -215,9 +215,130 @@ def main_distr():
     plt.show()
 
 
+def main():
+    t2t_ddir = sys.argv[1]
+    hg38_ddir = sys.argv[2]
+    hg19_ddir = sys.argv[3]
+    nb_dist = 500
+
+    df = []
+    d, t2t_truth = parse_dir(t2t_ddir, "t2t")
+    df += d
+    d, hg38_truth = parse_dir(hg38_ddir, "hg38")
+    df += d
+    d, hg19_truth = parse_dir(hg19_ddir, "hg19")
+    df += d
+
+    REFSEQS = ["hg19", "hg38", "t2t"]
+
+    df = pd.DataFrame(
+        df, columns=["RefSeq", "Truth", "Chrom", "Pos", "Len", "Type", "GT"]
+    )
+
+    fig, axes = plt.subplots(3, 3, figsize=(9, 8))
+
+    for i, refseq in enumerate(REFSEQS):
+        subdf = df[df["RefSeq"] == refseq]
+        df2 = subdf.groupby(["Truth", "Type"]).count()
+        sns.barplot(
+            data=df2,
+            x="Truth",
+            order=TRUTHS,
+            y="Chrom",
+            hue="Type",
+            legend=True if i == 2 else None,
+            palette="Set2",
+            ax=axes[0][i],
+        )
+        axes[0][i].set_xlabel("")  # Truth
+        axes[0][i].tick_params(axis="x", labelrotation=20)
+        axes[0][i].set_ylim(0, 19000)  # Count
+        axes[0][i].set_ylabel("")  # Count
+        if i == 0:
+            axes[0][i].set_ylabel("(a)")
+        if i != 0:
+            # remove y-ticks
+            axes[0][i].set_yticklabels([])
+        if i == 2:
+            # move legends
+            sns.move_legend(axes[0][i], "center left", bbox_to_anchor=(1, 0.5))
+
+        # ax1.bar_label(ax1.containers[0])
+        # ax1.bar_label(ax1.containers[1])
+        axes[0][i].set_title(refseq)
+
+        # variant length distribution per truthset
+        sns.histplot(
+            data=subdf[abs(subdf["Len"]) <= 500],
+            x="Len",
+            hue="Truth",
+            element="poly",
+            fill=False,
+            legend=True if i == 2 else None,
+            ax=axes[1][i],
+        )
+        axes[1][i].set_xlabel("Length")
+        axes[1][i].set_xticks([-500, -250, 0, 250, 500])
+        axes[1][i].set_ylabel("")  # Count
+        axes[1][i].set_ylim(0, 2000)
+        if i == 0:
+            axes[1][i].set_ylabel("(b)")
+        if i != 0:
+            # remove y-ticks
+            axes[1][i].set_yticklabels([])
+        if i == 2:
+            sns.move_legend(axes[1][i], "center left", bbox_to_anchor=(1, 0.5))
+
+    # neighbor distribution per truthset
+    for i, truths in enumerate([hg19_truth, hg38_truth, t2t_truth]):
+        df2 = []
+        for truth in truths:
+            neighbors = []
+            for chrom in truths[truth]:
+                last_p = truths[truth][chrom][0]
+                neighbors.append(0)
+                for p in truths[truth][chrom][1:]:
+                    if p - last_p > nb_dist:
+                        neighbors.append(0)
+                    else:
+                        neighbors[-1] += 1
+                    last_p = p
+            d = {}
+            for x in neighbors:
+                k = str(x)
+                if x >= 2:
+                    k = "2+"
+                d[k] = d[k] + 1 if k in d else 1
+            for k, v in d.items():
+                df2.append([truth, k, v])
+
+        df2 = pd.DataFrame(df2, columns=["Truth", f"#Neighbors-{nb_dist}bp", "Count"])
+        sns.barplot(
+            data=df2,
+            x=f"#Neighbors-{nb_dist}bp",
+            order=["0", "1", "2+"],
+            y="Count",
+            hue="Truth",
+            ax=axes[2][i],
+            legend=True if i == 2 else None,
+        )
+        axes[2][i].set_ylim(0, 30000)
+        axes[2][i].set_ylabel("")  # Count
+        if i == 0:
+            axes[2][i].set_ylabel("(c)")
+        if i == 2:
+            # move legends
+            sns.move_legend(axes[2][i], "center left", bbox_to_anchor=(1, 0.5))
+
+    plt.tight_layout()
+    plt.show()
+
+
 if __name__ == "__main__":
-    mode = sys.argv.pop(1)
-    if mode == "distr":
-        main_distr()
-    elif mode == "gt":
-        main_gt()
+    # mode = sys.argv.pop(1)
+    # if mode == "distr":
+    #     main_distr()
+    # elif mode == "gt":
+    #     main_gt()
+    # else:
+    main()

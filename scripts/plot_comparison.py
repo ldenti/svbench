@@ -31,7 +31,7 @@ def parse_summary(fpath):
     return P, R, F, TP, FP, FN
 
 
-def main_avg(acc=False):
+def main():
     print("This script assumes <= 3 truth callsets!", file=sys.stderr)
 
     labels = ["dipcall", "svim-asm", "hapdiff"]
@@ -42,50 +42,57 @@ def main_avg(acc=False):
         ("svim-asm", "hapdiff"),
     ]
 
-    fig, axes = plt.subplots(1, 3, figsize=(9, 4))
-    for i, ddir in enumerate(sys.argv[1:]):
-        # assuming this order: t2t, hg38, and hg19
-        M3 = [[0 for _ in labels] for _ in labels]
-        M3_labels = [["" for _ in labels] for _ in labels]
-        for t1, t2 in itertools.product(labels, labels):
-            fn = f"{ddir}/comparison-def/{t1}-against-{t2}/summary.json"
-            P1, R1, F1, TP1, FP1, FN1 = parse_summary(fn)
-            fn = f"{ddir}/comparison-bed/{t1}-against-{t2}/summary.json"
-            P2, R2, F2, TP2, FP2, FN2 = parse_summary(fn)
+    for bench in ["def", "bed"]:
+        fig, axes = plt.subplots(1, 3, figsize=(9, 4))
+        for ddir in sys.argv[1:]:
+            i = 0
+            if "hg38" in ddir:
+                i = 1
+            elif "t2t" in ddir:
+                i = 2
+            # assuming this order: t2t, hg38, and hg19
+            M = [[0 for _ in labels] for _ in labels]
+            M_annot = [[0 for _ in labels] for _ in labels]
+            for t1, t2 in itertools.product(labels, labels):
+                fn = f"{ddir}/comparison-{bench}/{t1}-against-{t2}/summary.json"
+                P, R, F, TP, FP, FN = parse_summary(fn)
 
-            ACC1 = round(TP1 / (TP1 + FP1 + FN1), 2)
-            ACC2 = round(TP2 / (TP2 + FP2 + FN2), 2)
+                ACC = round(TP / (TP + FP + FN), 2)
 
-            if acc:
-                M3[indexes[t2]][indexes[t1]] = (ACC1 + ACC2) / 2
-                M3_labels[indexes[t2]][indexes[t1]] = f"def:bed\n{ACC1}:{ACC2}"
-            else:
-                M3[indexes[t2]][indexes[t1]] = (P1 + P2) / 2
-                M3_labels[indexes[t2]][indexes[t1]] = f"def:bed\n{P1}:{P2}"
+                M[indexes[t2]][indexes[t1]] = ACC
+                M_annot[indexes[t2]][indexes[t1]] = str(ACC)
+            # Force diagonal
+            M[1][0] = 0
+            M_annot[1][0] = ""
+            M[2][0] = 0
+            M_annot[2][0] = ""
+            M[2][1] = 0
+            M_annot[2][1] = ""
 
-        sns.heatmap(
-            M3,
-            square=True,
-            annot=M3_labels,
-            fmt="",
-            xticklabels=labels,
-            cmap=CMAP,
-            yticklabels=labels if i == 0 else False,
-            cbar=False,
-            vmin=0.5,
-            vmax=1.0,
-            ax=axes[i],
-        )
+            sns.heatmap(
+                M,
+                square=True,
+                annot=M_annot,
+                fmt="",
+                xticklabels=labels,
+                cmap=CMAP,
+                yticklabels=labels if i == 0 else False,
+                cbar=False,
+                vmin=0.3,
+                vmax=1.0,
+                ax=axes[i],
+            )
 
-    x_titles = ["T2T", "hg38", "hg19"]
-    for ax, title in zip(axes, x_titles):
-        ax.set_title(title)
-        ax.tick_params(axis="x", labelrotation=0)
-        ax.tick_params(axis="y", labelrotation=90)
-        ax.set_xlabel("How much of this...")
-    axes[0].set_ylabel("...matches with this")
-    plt.tight_layout()
-    plt.show()
+        x_titles = ["hg19", "hg38", "T2T"]
+        for ax, title in zip(axes, x_titles):
+            ax.set_title(title)
+            ax.tick_params(axis="x", labelrotation=0)
+            ax.tick_params(axis="y", labelrotation=90)
+        axes[1].set_xlabel("How much of this...")
+        axes[0].set_ylabel("...matches with this")
+        plt.tight_layout()
+        plt.show()
+        plt.close()
 
 
 def main_all():
@@ -188,64 +195,5 @@ def main_all():
     plt.show()
 
 
-def main():
-    print("This script assumes <= 3 truth callsets!", file=sys.stderr)
-    in_dir = sys.argv[1]
-    run = "bed"  # sys.argv[2]
-
-    labels = []  # ["dipcall", "svim-asm", "severus-paper"]
-    indexes = {}  # {"dipcall": 0, "svim-asm": 1, "severus-paper": 2}
-    for i, f in enumerate(glob.glob(f"{in_dir}/*.vcf.gz")):
-        fname = f.split("/")[-1][:-7]
-        labels.append(fname)
-        indexes[fname] = i
-
-    pairs = [
-        ("dipcall", "svim-asm"),
-        ("dipcall", "hapdiff"),
-        ("svim-asm", "hapdiff"),
-    ]
-    M = [[0 for _ in labels] for _ in labels]
-    two = False
-    for t1, t2 in itertools.product(labels, labels):
-        fn = f"{in_dir}/comparison-{run}/{t1}-against-{t2}/summary.json"
-        if not os.path.exists(fn):
-            print(f"Skipping {t1}/{t2}")
-            two = True
-            continue
-        P, R, F, TP, FP, FN = parse_summary(fn)
-        M[indexes[t1]][indexes[t2]] = P
-        M[indexes[t2]][indexes[t1]] = R
-        M[indexes[t1]][indexes[t1]] = 1
-        M[indexes[t2]][indexes[t2]] = 1
-    if two:
-        M = [x[:2] for x in M[:2]]
-        labels = labels[:2]
-    sns.heatmap(
-        M,
-        square=True,
-        annot=True,
-        xticklabels=labels,
-        yticklabels=labels,
-        # vmin=0.7,
-        # vmax=1.0,
-    )
-    plt.xlabel("How much of this...")
-    plt.ylabel("...match with this")
-    plt.tight_layout()
-    plt.show()
-
-
 if __name__ == "__main__":
-    if sys.argv[1] == "all":
-        sys.argv.pop(0)
-        main_all()
-    elif sys.argv[1] == "avgp":
-        sys.argv.pop(0)
-        main_avg(acc=False)
-    elif sys.argv[1] == "avga":
-        sys.argv.pop(0)
-        main_avg(acc=True)
-    else:
-        sys.argv.pop(0)
-        main()
+    main()

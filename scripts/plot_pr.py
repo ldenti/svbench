@@ -66,8 +66,37 @@ def main():
     hg19_fn = sys.argv[3]
     hg19_v06_fn = sys.argv[4]
 
-    four = False  # True
-    five = True
+    fig, axes = plt.subplots(2, 4, figsize=(10, 5))
+
+    # GIAB v0.6
+    col = 0
+    ref = "hg19"
+    data = parse_csv(hg19_v06_fn, "hg19", TOOLS)
+    df = pd.DataFrame(data, columns=["Ref", "Tool", "P", "R", "F1"])
+    sns.scatterplot(
+        data=df[(df["Ref"] == ref) & (df["F1"] > 0)],
+        x="P",
+        y="R",
+        hue="Tool",
+        hue_order=x_order,
+        ax=axes[0][col],
+        legend=None,
+    )
+    sns.barplot(
+        data=df[df["Ref"] == ref],
+        x="Tool",
+        y="F1",
+        order=x_order,
+        hue_order=x_order,
+        ax=axes[1][col],
+        hue="Tool",
+    )
+    axes[0][col].set_title("(a)\n" + ref + " (GIAB v0.6, Tier 1)")
+    axes[0][col].set_xlim([75, 100])
+    axes[0][col].set_ylim([45, 100])
+    axes[1][col].set_ylim([0, 100])
+    # axes[1][col].bar_label(axes[1][col].containers[0])
+    axes[1][col].tick_params(axis="x", labelrotation=90)
 
     data = []
     data += parse_csv(t2t_fn, "t2t")
@@ -76,8 +105,8 @@ def main():
 
     df = pd.DataFrame(data, columns=["Ref", "Tool", "P", "R", "F1"])
     print(df)
-    fig, axes = plt.subplots(2, 5 if five else 3, figsize=(10, 5))
-    for col, ref in enumerate(["t2t", "hg38", "hg19"]):
+
+    for col, ref in enumerate(["hg19", "hg38", "t2t"], 1):
         sns.scatterplot(
             data=df[df["Ref"] == ref],
             x="P",
@@ -99,7 +128,7 @@ def main():
             # alpha=0.75,
         )
 
-        axes[0][col].set_title(f"({('abc'[col])})\n" + ref)
+        axes[0][col].set_title(f"({('abcd'[col])})\n" + ref + " (GIAB v1.1, w/ BED)")
         axes[0][col].set_xlim([75, 100])
         axes[0][col].set_ylim([45, 100])
 
@@ -110,70 +139,6 @@ def main():
         if col != 0:
             axes[0][col].set_ylabel("")
             axes[1][col].set_ylabel("")
-
-    if five:
-        col = 3
-        ref = "hg19"
-        data = parse_csv(hg19_fn, ref, TOOLS2)
-        # this to fake columns
-        data.append([ref, "SVDSS2ht", 0, 0, 0])
-        data.append([ref, "sawfish", 0, 0, 0])
-        df = pd.DataFrame(data, columns=["Ref", "Tool", "P", "R", "F1"])
-        sns.scatterplot(
-            data=df[(df["Ref"] == ref) & (df["F1"] > 0)],
-            x="P",
-            y="R",
-            hue="Tool",
-            hue_order=x_order,
-            ax=axes[0][col],
-            legend=None,
-        )
-        sns.barplot(
-            data=df[df["Ref"] == ref],
-            x="Tool",
-            y="F1",
-            order=x_order,
-            hue_order=x_order,
-            ax=axes[1][col],
-            hue="Tool",
-        )
-        axes[0][col].set_title("(d)\n" + ref + " (severus)")
-        axes[0][col].set_xlim([75, 100])
-        axes[0][col].set_ylim([45, 100])
-        axes[1][col].set_ylim([0, 100])
-        # axes[1][col].bar_label(axes[1][col].containers[0])
-        axes[1][col].tick_params(axis="x", labelrotation=90)
-
-        # ---
-
-        col = 4
-        ref = "hg19"
-        data = parse_csv(hg19_v06_fn, "hg19", TOOLS)
-        df = pd.DataFrame(data, columns=["Ref", "Tool", "P", "R", "F1"])
-        sns.scatterplot(
-            data=df[(df["Ref"] == ref) & (df["F1"] > 0)],
-            x="P",
-            y="R",
-            hue="Tool",
-            hue_order=x_order,
-            ax=axes[0][col],
-            legend=None,
-        )
-        sns.barplot(
-            data=df[df["Ref"] == ref],
-            x="Tool",
-            y="F1",
-            order=x_order,
-            hue_order=x_order,
-            ax=axes[1][col],
-            hue="Tool",
-        )
-        axes[0][col].set_title("(e)\n" + ref + " (GIAB v0.6)")
-        axes[0][col].set_xlim([75, 100])
-        axes[0][col].set_ylim([45, 100])
-        axes[1][col].set_ylim([0, 100])
-        # axes[1][col].bar_label(axes[1][col].containers[0])
-        axes[1][col].tick_params(axis="x", labelrotation=90)
 
     plt.tight_layout()
     plt.show()

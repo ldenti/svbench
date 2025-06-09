@@ -101,7 +101,7 @@ def main_rankmap():
 
 
 def main_matrix():
-    sns.set(font_scale=0.7)
+    # sns.set(font_scale=0.7)
     t2t_ddir = sys.argv[1]
     hg38_ddir = sys.argv[2]
     hg19_ddir = sys.argv[3]
@@ -142,18 +142,21 @@ def main_matrix():
     g.tick_params(axis="x", labelrotation=45)  # set_xticklabels(rotation=90)
     g.set(ylim=(0, 100))
 
-    for row in g.axes:
-        for ax in row:
-            ax.bar_label(ax.containers[0], rotation=60)
-            ax.bar_label(ax.containers[1], rotation=60)
-            ax.bar_label(ax.containers[2], rotation=60)
+    # for row in g.axes:
+    #     for ax in row:
+    #         ax.bar_label(ax.containers[0], rotation=90)
+    #         ax.bar_label(ax.containers[1], rotation=90)
+    #         ax.bar_label(ax.containers[2], rotation=90)
 
+    sns.move_legend(g, "upper left", bbox_to_anchor=(0.065, 0.95), title="", ncol=3)
     plt.tight_layout()
     plt.show()
     # plt.savefig(ddir + "/truvari-all.f1.png", dpi=300)
     plt.close()
 
-    ax = sns.stripplot(
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 5), sharey=True)
+
+    sns.stripplot(
         df,
         x="F1",
         y="Tool",
@@ -161,62 +164,29 @@ def main_matrix():
         alpha=0.6,
         s=6,
         order=tools,
+        linewidth=1,
+        ax=ax1,
     )
-    ax.set_xlim(xmax=100)
-    plt.tight_layout()
-    plt.show()
+    ax1.set_xlim(35, 100)
+    ax1.set_title("(a)")
 
-
-def main_matrix1():
-    sns.set(font_scale=0.7)
-    ddir = sys.argv[1]
-
-    data = parse_ddir(ddir)
-    df = pd.DataFrame(data, columns=["Truth", "Bench", "Tool", "F1"])
-    print(df)
-
-    tools = df["Tool"].unique()
-    tools.sort()
-
-    if len(df["Truth"].unique()) == 2:
-        new_data = []
-        for row in data:
-            if row[0] == "dipcall":
-                new_data.append(["Severus", row[1], row[2], 0.0])
-        new_df = pd.DataFrame(new_data, columns=["Truth", "Bench", "Tool", "F1"])
-        df = pd.concat([df, new_df], ignore_index=True)
-
-    ro = df["Truth"].unique()
-    ro.sort()
-    co = df["Bench"].unique()
-    co.sort()
-    g = sns.FacetGrid(
-        df, row="Truth", col="Bench", row_order=ro, col_order=co, margin_titles=True
-    )
-    g.map(
-        sns.barplot,
-        "Tool",
-        "F1",
-        color="forestgreen",
-        alpha=0.75,
+    sns.stripplot(
+        df[(df["RefSeq"] == "hg38") & (df["Bench"] == "truvari-nosim")],
+        x="F1",
+        y="Tool",
+        hue="Truth",
+        alpha=0.6,
+        s=6,
         order=tools,
+        linewidth=1,
+        palette="Oranges_d",
+        ax=ax2,
     )
-    g.tick_params(axis="x", labelrotation=90)  # set_xticklabels(rotation=90)
-    g.set(ylim=(0, 100))
-
-    for row in g.axes:
-        for ax in row:
-            ax.bar_label(ax.containers[0])
+    ax2.set_xlim(35, 100)
+    ax2.set_title("(b) hg38 (truvari-nosim)")
 
     plt.tight_layout()
     plt.show()
-    # plt.savefig(ddir + "/truvari-all.f1.png", dpi=300)
-    plt.close()
-
-    sns.stripplot(df, x="F1", y="Tool", hue="Tool")
-    plt.tight_layout()
-    plt.show()
-    # plt.savefig(ddir + "/truvari-all.sp.png", dpi=300)
 
 
 def main_bar():

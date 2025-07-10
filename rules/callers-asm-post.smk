@@ -14,7 +14,7 @@ rule remove_info:
         "../envs/sambcftools.yml"
     shell:
         """
-        bash ../scripts/remove_info_from_vcf.sh {input.vcf} | bgzip -c > {output.vcf}
+        bash ./scripts/remove_info_from_vcf.sh {input.vcf} | bgzip -c > {output.vcf}
         tabix -p vcf {output.vcf}
         """
 
@@ -28,14 +28,14 @@ rule vcf2regions:
         "../envs/sambcftools.yml"
     shell:
         """
-        python3 ../scripts/vcf2regions.py {input.vcf} {wildcards.w} > {output.txt}
+        python3 ./scripts/vcf2regions.py {input.vcf} {wildcards.w} > {output.txt}
         """
 
 
 rule get_contigs:
     input:
         fa=REF,
-        vcf=pjoin(WD, "truths", "{asm}.vcf.gz"),
+        vcf=rules.remove_info.output.vcf,
         txt=rules.vcf2regions.output.txt,
     output:
         fa=pjoin(WD, "truths", "{asm}.hap{h}-w{w}.fa"),

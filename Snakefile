@@ -53,6 +53,8 @@ include: "rules/minda.smk"
 
 rule all:
     input:
+        # from callers-asm-post.smk
+        expand(pjoin(WD, "truths", "{truth}.haps.paf"), truth=TRUTHS),
         # from truvari.smk
         expand(
             pjoin(WD, "{truth}.truvari-{opt}.csv.png"),

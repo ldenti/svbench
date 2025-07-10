@@ -99,14 +99,14 @@ def main():
     axes[1][col].tick_params(axis="x", labelrotation=90)
 
     data = []
-    data += parse_csv(t2t_fn, "t2t")
+    data += parse_csv(t2t_fn, "T2T")
     data += parse_csv(hg38_fn, "hg38")
     data += parse_csv(hg19_fn, "hg19")
 
     df = pd.DataFrame(data, columns=["Ref", "Tool", "P", "R", "F1"])
     print(df)
 
-    for col, ref in enumerate(["hg19", "hg38", "t2t"], 1):
+    for col, ref in enumerate(["hg19", "hg38", "T2T"], 1):
         sns.scatterplot(
             data=df[df["Ref"] == ref],
             x="P",

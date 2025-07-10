@@ -133,8 +133,8 @@ def main_matrix():
         col_order=co,
         sharex=True,
         sharey=True,
-        height=2.5,
-        aspect=1.7,
+        height=2.3,
+        aspect=1.6,
         margin_titles=True,
         legend_out=False,
     )
@@ -148,14 +148,15 @@ def main_matrix():
     #         ax.bar_label(ax.containers[1], rotation=90)
     #         ax.bar_label(ax.containers[2], rotation=90)
 
-    sns.move_legend(g, "upper left", bbox_to_anchor=(0.065, 0.95), title="", ncol=3)
+    sns.move_legend(g, "upper left", bbox_to_anchor=(0.07, 0.95), title="", ncol=3)
     plt.tight_layout()
     plt.show()
     # plt.savefig(ddir + "/truvari-all.f1.png", dpi=300)
     plt.close()
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 5), sharey=True)
-
+    # original: all points on left, hg38 only on right plot
+    # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 5), sharey=True)
+    fig, ax1 = plt.subplots(1, 1, figsize=(6, 6), sharey=True)
     sns.stripplot(
         df,
         x="F1",
@@ -168,22 +169,22 @@ def main_matrix():
         ax=ax1,
     )
     ax1.set_xlim(35, 100)
-    ax1.set_title("(a)")
-
-    sns.stripplot(
-        df[(df["RefSeq"] == "hg38") & (df["Bench"] == "truvari-nosim")],
-        x="F1",
-        y="Tool",
-        hue="Truth",
-        alpha=0.6,
-        s=6,
-        order=tools,
-        linewidth=1,
-        palette="Oranges_d",
-        ax=ax2,
-    )
-    ax2.set_xlim(35, 100)
-    ax2.set_title("(b) hg38 (truvari-nosim)")
+    sns.move_legend(ax1, "lower right")
+    # ax1.set_title("(a)")
+    # sns.stripplot(
+    #     df[(df["RefSeq"] == "hg38") & (df["Bench"] == "truvari-nosim")],
+    #     x="F1",
+    #     y="Tool",
+    #     hue="Truth",
+    #     alpha=0.6,
+    #     s=6,
+    #     order=tools,
+    #     linewidth=1,
+    #     palette="Oranges_d",
+    #     ax=ax2,
+    # )
+    # ax2.set_xlim(35, 100)
+    # ax2.set_title("(b) hg38 (truvari-nosim)")
 
     plt.tight_layout()
     plt.show()

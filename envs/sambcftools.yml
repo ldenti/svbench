@@ -1,0 +1,8 @@
+name: sambcftools
+channels:
+  - bioconda
+dependencies:
+  - bcftools
+  - samtools
+  - pysam
+  - tabix

@@ -8,6 +8,7 @@ import seaborn as sns
 # sns.set(font_scale=2)
 sns.set(style="whitegrid")
 
+REFSEQS = ["hg19", "hg38", "T2T"]
 TRUTHS = ["dipcall", "svim-asm", "hapdiff"]
 
 
@@ -16,6 +17,8 @@ def parse_dir(ddir, refseq=""):
     truths = {}
     data = []
     for vcf_fn in glob.glob(f"{ddir}/*.vcf.gz"):
+        if "noinfo" in vcf_fn:
+            continue
         name = vcf_fn.split("/")[-1].split(".")[0]
         if name not in TRUTHS:
             continue
@@ -50,11 +53,26 @@ def parse_dir(ddir, refseq=""):
     return data, truths
 
 
+def parse_pafs(ddir, refseq=""):
+    data = []
+    for paf_fn in glob.glob(f"{ddir}/ttmars-like/*/haps.paf"):
+        name = paf_fn.split("/")[-2]
+        if name not in TRUTHS:
+            continue
+        for line in open(paf_fn):
+            line = line.strip("\n").split("\t")
+            nm = int(line[12].split(":")[-1])
+            tp = line[16][-1]
+            de = float(line[20].split(":")[-1])
+            if tp == "P":
+                data.append([refseq, name, nm, de])
+    return data
+
+
 def main_gt():
     nb_dist = 50
 
     fig, axes = plt.subplots(2, 3, figsize=(10, 5))
-    refseqs = ["t2t", "hg38", "hg19"]
     for i, vcf_dir in enumerate(sys.argv[1:4]):
         # we may not need this dict and do everything on df but it's more convenient to me
         df, truths = parse_dir(vcf_dir)
@@ -96,7 +114,7 @@ def main_gt():
 
         # ax1.bar_label(ax1.containers[0])
         # ax1.bar_label(ax1.containers[1])
-        axes[0][i].set_title(refseqs[i])
+        axes[0][i].set_title(REFSEQS[i])
 
         # neighbor distribution per truthset
         df2 = []
@@ -152,8 +170,6 @@ def main_distr():
     df += parse_dir(t2t_ddir, "t2t")[0]
     df += parse_dir(hg38_ddir, "hg38")[0]
     df += parse_dir(hg19_ddir, "hg19")[0]
-
-    REFSEQS = ["t2t", "hg38", "hg19"]
 
     df = pd.DataFrame(
         df, columns=["RefSeq", "Truth", "Chrom", "Pos", "Len", "Type", "GT"]
@@ -222,20 +238,18 @@ def main():
     nb_dist = 500
 
     df = []
-    d, t2t_truth = parse_dir(t2t_ddir, "t2t")
+    d, t2t_truth = parse_dir(t2t_ddir, "T2T")
     df += d
     d, hg38_truth = parse_dir(hg38_ddir, "hg38")
     df += d
     d, hg19_truth = parse_dir(hg19_ddir, "hg19")
     df += d
 
-    REFSEQS = ["hg19", "hg38", "t2t"]
-
     df = pd.DataFrame(
         df, columns=["RefSeq", "Truth", "Chrom", "Pos", "Len", "Type", "GT"]
     )
 
-    fig, axes = plt.subplots(3, 3, figsize=(9, 8))
+    fig, axes = plt.subplots(4, 3, figsize=(9, 11))
 
     for i, refseq in enumerate(REFSEQS):
         subdf = df[df["RefSeq"] == refseq]
@@ -272,6 +286,7 @@ def main():
             data=subdf[abs(subdf["Len"]) <= 500],
             x="Len",
             hue="Truth",
+            hue_order=TRUTHS,
             element="poly",
             fill=False,
             legend=True if i == 2 else None,
@@ -319,6 +334,7 @@ def main():
             order=["0", "1", "2+"],
             y="Count",
             hue="Truth",
+            hue_order=TRUTHS,
             ax=axes[2][i],
             legend=True if i == 2 else None,
         )
@@ -330,8 +346,37 @@ def main():
             # move legends
             sns.move_legend(axes[2][i], "center left", bbox_to_anchor=(1, 0.5))
 
+    # --- NM ttmars-like
+    df = []
+    df += parse_pafs(t2t_ddir, "T2T")
+    df += parse_pafs(hg38_ddir, "hg38")
+    df += parse_pafs(hg19_ddir, "hg19")
+
+    df = pd.DataFrame(df, columns=["RefSeq", "Truth", "NM", "de"])
+    for i, refseq in enumerate(REFSEQS):
+        subdf = df[df["RefSeq"] == refseq]
+        sns.histplot(
+            data=subdf,
+            x="NM",
+            hue="Truth",
+            hue_order=TRUTHS,
+            binrange=[0, 50],
+            discrete=True,
+            element="step",
+            legend=True if i == 2 else None,
+            ax=axes[3][i],
+        )
+        axes[3][i].set_ylim(0, 4000)
+        if i == 0:
+            axes[3][i].set_ylabel("(d)")
+        else:
+            axes[3][i].set_ylabel("")
+        if i == 2:
+            # move legends
+            sns.move_legend(axes[3][i], "center left", bbox_to_anchor=(1, 0.5))
     plt.tight_layout()
     plt.show()
+    # plt.savefig("x.pdf")
 
 
 if __name__ == "__main__":

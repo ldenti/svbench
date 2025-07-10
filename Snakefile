@@ -23,6 +23,7 @@ CALLERS = config["callers"]
 
 # callers from assembly
 include: "rules/callers-asm.smk"
+include: "rules/callers-asm-post.smk"
 # alignment and phasing
 include: "rules/preprocess.smk"
 # callers from BAM
@@ -54,7 +55,7 @@ include: "rules/minda.smk"
 rule all:
     input:
         # from callers-asm-post.smk
-        expand(pjoin(WD, "truths", "{truth}.haps.paf"), truth=TRUTHS),
+        expand(pjoin(WD, "truths", "{truth}.haps-w500.paf"), truth=TRUTHS),
         # from truvari.smk
         expand(
             pjoin(WD, "{truth}.truvari-{opt}.csv.png"),

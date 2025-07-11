@@ -14,7 +14,7 @@ rule remove_info:
         "../envs/sambcftools.yml"
     shell:
         """
-        bash ./scripts/remove_info_from_vcf.sh {input.vcf} | bgzip -c > {output.vcf}
+        bash ./scripts/remove_info_from_vcf.sh {input.vcf} | bcftools view -Oz -v indels -i '(ILEN <= -30 || ILEN >= 30)' > {output.vcf}
         tabix -p vcf {output.vcf}
         """
 
@@ -43,7 +43,7 @@ rule get_contigs:
         "../envs/sambcftools.yml"
     shell:
         """
-        grep "first" {input.txt} | cut -f1 -d" " | while read region do ; samtools faidx {input.fa} $region | bcftools consensus {input.vcf} -H {wildcards.h} ; done > {output.fa} 2> {output.fa}.log
+        grep "first" {input.txt} | cut -f1 -d" " | while read region ; do samtools faidx {input.fa} $region | bcftools consensus {input.vcf} -H {wildcards.h} ; done > {output.fa} 2> {output.fa}.log
         """
 
 
@@ -79,7 +79,8 @@ rule minimap2:
         paf=pjoin(WD, "truths", "{asm}.haps-w{w}.paf"),
     conda:
         "../envs/minimap2.yml"
+    threads: workflow.cores
     shell:
         """
-        minimap2 -t2 -c {input.tfa} {input.qfa} > {output.paf}
+        minimap2 -t{threads} -c {input.tfa} {input.qfa} > {output.paf}
         """

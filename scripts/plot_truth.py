@@ -55,8 +55,8 @@ def parse_dir(ddir, refseq=""):
 
 def parse_pafs(ddir, refseq=""):
     data = []
-    for paf_fn in glob.glob(f"{ddir}/ttmars-like/*/haps.paf"):
-        name = paf_fn.split("/")[-2]
+    for paf_fn in glob.glob(f"{ddir}/truths/*.haps-w*.paf"):
+        name = paf_fn.split("/")[-1].split(".")[0]
         if name not in TRUTHS:
             continue
         for line in open(paf_fn):

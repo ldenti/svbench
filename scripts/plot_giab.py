@@ -29,7 +29,7 @@ TOOLS2 = [
 
 x_order = [
     "SVDSS",
-    "SVDSS2ht",
+    "SVDSS2",
     "cuteSV",
     "debreak",
     "sawfish",
@@ -51,11 +51,14 @@ def parse_csv(fn, refseq, tools=TOOLS):
             tool = tool.split("-")[0]
         if tool == "cutesv":
             tool = "cuteSV"
-        elif tool == "svdss":
-            tool = "SVDSS"
+        elif tool == "SVDSS2ht":
+            tool = "SVDSS2"
         if float(F1) == 0.0:
             continue
         data.append([refseq, tool, float(P), float(R), float(F1)])
+    data.sort(key=lambda x: x[-1], reverse=True)
+    for i, row in enumerate(data, 1):
+        row.append(i)
     return data
 
 
@@ -70,9 +73,9 @@ def main():
 
     # GIAB v0.6
     col = 0
-    ref = "hg19"
-    data = parse_csv(hg19_v06_fn, "hg19", TOOLS)
-    df = pd.DataFrame(data, columns=["Ref", "Tool", "P", "R", "F1"])
+    ref = "GRCh37"
+    data = parse_csv(hg19_v06_fn, "GRCh37", TOOLS)
+    df = pd.DataFrame(data, columns=["Ref", "Tool", "P", "R", "F1", "rank"])
     sns.scatterplot(
         data=df[(df["Ref"] == ref) & (df["F1"] > 0)],
         x="P",
@@ -95,18 +98,19 @@ def main():
     axes[0][col].set_xlim([75, 100])
     axes[0][col].set_ylim([45, 100])
     axes[1][col].set_ylim([0, 100])
-    # axes[1][col].bar_label(axes[1][col].containers[0])
+    for i, container in enumerate(axes[1][col].containers):
+        axes[1][col].bar_label(container, labels=df[df["Tool"] == x_order[i]]["rank"])
     axes[1][col].tick_params(axis="x", labelrotation=90)
 
     data = []
     data += parse_csv(t2t_fn, "T2T")
-    data += parse_csv(hg38_fn, "hg38")
-    data += parse_csv(hg19_fn, "hg19")
+    data += parse_csv(hg38_fn, "GRCh38")
+    data += parse_csv(hg19_fn, "GRCh37")
 
-    df = pd.DataFrame(data, columns=["Ref", "Tool", "P", "R", "F1"])
+    df = pd.DataFrame(data, columns=["Ref", "Tool", "P", "R", "F1", "rank"])
     print(df)
 
-    for col, ref in enumerate(["hg19", "hg38", "T2T"], 1):
+    for col, ref in enumerate(["GRCh37", "GRCh38", "T2T"], 1):
         sns.scatterplot(
             data=df[df["Ref"] == ref],
             x="P",
@@ -133,7 +137,13 @@ def main():
         axes[0][col].set_ylim([45, 100])
 
         axes[1][col].set_ylim([0, 100])
-        # axes[1][col].bar_label(axes[1][col].containers[0])
+
+        for i, container in enumerate(axes[1][col].containers):
+            axes[1][col].bar_label(
+                container,
+                labels=df[(df["Ref"] == ref) & (df["Tool"] == x_order[i])]["rank"],
+            )
+
         axes[1][col].tick_params(axis="x", labelrotation=90)
 
         if col != 0:

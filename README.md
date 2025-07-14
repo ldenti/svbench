@@ -22,24 +22,19 @@ ls $WD/*.csv $WD/*.png
 ```
 
 ### Analyses
-These scripts assume `truvari` and `seaborn` to be installed.
+These scripts assume `truvari` and `seaborn` to be installed. Moreover, everything is hardcoded to 3 reference sequences (so please run the snakemake pipeline three times).
+
+##### Assembly-based
 ``` sh
-WD=$(grep "wd:" ./config/config.yml | cut -f2 -d" ")
+# Figure on assembly-based callsets
+python3 scripts/plot_asm.py $t2t_wd $hg38_wd $hg19_wd
 
-# plot figure on assembly-based callsets
-python3 scripts/plot_truth.py $t2t_wd/truths $hg38_wd/truths $hg19_wd/truths
+# Three genomes heatmap (jaccard similarity/accuracy)
+python3 scripts/plot_comparison_asm.py $t2t_wd/truths $hg38_wd/truths $hg19_wd/truths
+```
 
-# plot statistics from truth callsets (from single reference run)
-python3 scripts/plot_truth_single.py $WD/truths > dipcall-170bp.bed
-# intersect dipcall peak around 170bp with Centromeric Satellite Annotation
-# https://genome.cse.ucsc.edu/cgi-bin/hgTrackUi?db=hub_3671779_hs1&c=chr12&g=hub_3671779_censat
-bedtools intersect -a dipcall-170bp.bed -b censat.bed -wb | cut -f 7 | sort | uniq -c
-
-bash run_truvari.sh $WD/truths
-
-# 3 genomes heatmap (jaccard similarity/accuracy)
-python3 scripts/plot_comparison.py $t2t_wd/truths $hg38_wd/truths $hg19_wd/truths
-
+##### Read-based vs assembly-based
+``` sh
 # summarize F1 in a single plot
 python3 scripts/plot_truvari.py all $t2t_wd $hg38_wd $hg19_wd
 # rank map depending on F1
@@ -47,39 +42,24 @@ python3 scripts/plot_truvari.py rank $t2t_wd t2t
 
 # F1 results on GIAB stratification
 python3 scripts/plot_giabstrat.py $t2t_wd $hg38_wd $hg19_wd
-
-# Compare results on hg19 between "our" callsets and severus callsets
-bash ./scripts/build_hg19_comparison_table.sh $hg19_wd
-
----
-
-# Check how many calls from hapdiff are in dipcall "non-confident" regions (0s in the histogram)
-bedtools intersect -a $WD/comparison-def/dipcall-against-hapdiff/fn.vcf.gz -b $WD/truths/dipcall.bed -c | cut -f11 | sort -n | uniq -c
-
----
-
-# Run last dipcall step on hapdiff .bam files and check
-htsbox pileup -q20 -evcf $ref $WD/truths/hapdiff_pat.bam $WD/truths/hapdiff_mat.bam | dipcall-aux.js vcfpair - | bcftools view -v indels -i '(ILEN <= -50 || ILEN >= 50)' | bcftools norm -Oz --multiallelics - > $WD/truths/hapdiff.htsbox.vcf.gz
-tabix -p vcf $WD/truths/hapdiff.htsbox.vcf.gz
-truvari bench -s 50 -S 50 -c $WD/truths/hapdiff.htsbox.vcf.gz -b $WD/truths/hapdiff.vcf.gz -o OUT
 ```
 
-### Evaluation against GIAB (v1.1 and v0.6)
-```
-# Get *_stvar.vcf.gz and *_stvar.benchmark.bed
-# from https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_HG002_DraftBenchmark_defrabbV0.019-20241113/
-# run this for all three reference sequences
-bcftools view -Oz -v indels -i '(ILEN <= -50 || ILEN >= 50)' CHM13v2.0_HG2-T2TQ100-V1.1_stvar.vcf.gz > CHM13v2.0-HG2.sv.vcf.gz
+##### Evaluation against GIAB (v1.1 and v0.6)
+``` sh
+# Get GIAB v1.1
+wget https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_HG002_DraftBenchmark_defrabbV0.019-20241113/{CHM13v2.0,GRCh37,GRCh38}_HG2-T2TQ100-V1.1_stvar.{vcf.gz,vcf.gz.tbi,benchmark.bed}
+# run this for all three reference sequences:
+bcftools view -Oz -v indels -i '(ILEN <= -30 || ILEN >= 30)' CHM13v2.0_HG2-T2TQ100-V1.1_stvar.vcf.gz > CHM13v2.0-HG2.sv.vcf.gz
 tabix -p vcf CHM13v2.0-HG2.sv.vcf.gz
 bash ./scripts/truvari_on_giab.sh $t2t_wd/ CHM13v2.0-HG2.sv.vcf.gz CHM13v2.0_HG2-T2TQ100-V1.1_stvar.benchmark.bed 11
 python3 ./scripts/format_truvari.py $t2t_wd/giab-v1.1/ > $t2t_wd/giab-v1.1.csv
 
-# Get HG002_SVs_Tier1_v0.6.{vcf.gz,vcf.gz.tbi,bed}
-# from https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_SVs_Integration_v0.6/
+# Get GIAB v0.6
+wget https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_SVs_Integration_v0.6/HG002_SVs_Tier1_v0.6.{vcf.gz,vcf.gz.tbi,bed}
 bash ./scripts/truvari_on_giab.sh $hg19_wd/ HG002_SVs_Tier1_v0.6.vcf.gz HG002_SVs_Tier1_v0.6.bed 06
 python3 ./scripts/format_truvari.py $WD/giab-v0.6/ > $hg_19wd/giab-v0.6.csv
 
-python3 ./scripts/plot_pr.py giab-v1.1.t2t.csv giab-v1.1.hg38.csv giab-v1.1.hg19.csv giab-v0.6.csv
+python3 ./scripts/plot_giab.py giab-v1.1.t2t.csv giab-v1.1.hg38.csv giab-v1.1.hg19.csv giab-v0.6.csv
 ```
 
 ### Data

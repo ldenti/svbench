@@ -8,7 +8,7 @@ import seaborn as sns
 # sns.set(font_scale=2)
 sns.set(style="whitegrid")
 
-REFSEQS = ["hg19", "hg38", "T2T"]
+REFSEQS = ["GRCh37", "GRCh38", "T2T"]
 TRUTHS = ["dipcall", "svim-asm", "hapdiff"]
 
 
@@ -16,7 +16,7 @@ def parse_dir(ddir, refseq=""):
     # we may not need this dict and do everything on df but it's more convenient to me
     truths = {}
     data = []
-    for vcf_fn in glob.glob(f"{ddir}/*.vcf.gz"):
+    for vcf_fn in glob.glob(f"{ddir}/truths/*.vcf.gz"):
         if "noinfo" in vcf_fn:
             continue
         name = vcf_fn.split("/")[-1].split(".")[0]
@@ -167,9 +167,9 @@ def main_distr():
     hg19_ddir = sys.argv[3]
 
     df = []
-    df += parse_dir(t2t_ddir, "t2t")[0]
-    df += parse_dir(hg38_ddir, "hg38")[0]
-    df += parse_dir(hg19_ddir, "hg19")[0]
+    df += parse_dir(t2t_ddir, "T2T")[0]
+    df += parse_dir(hg38_ddir, "GRCh38")[0]
+    df += parse_dir(hg19_ddir, "GRCh37")[0]
 
     df = pd.DataFrame(
         df, columns=["RefSeq", "Truth", "Chrom", "Pos", "Len", "Type", "GT"]
@@ -240,9 +240,9 @@ def main():
     df = []
     d, t2t_truth = parse_dir(t2t_ddir, "T2T")
     df += d
-    d, hg38_truth = parse_dir(hg38_ddir, "hg38")
+    d, hg38_truth = parse_dir(hg38_ddir, "GRCh38")
     df += d
-    d, hg19_truth = parse_dir(hg19_ddir, "hg19")
+    d, hg19_truth = parse_dir(hg19_ddir, "GRCh37")
     df += d
 
     df = pd.DataFrame(
@@ -349,10 +349,11 @@ def main():
     # --- NM ttmars-like
     df = []
     df += parse_pafs(t2t_ddir, "T2T")
-    df += parse_pafs(hg38_ddir, "hg38")
-    df += parse_pafs(hg19_ddir, "hg19")
+    df += parse_pafs(hg38_ddir, "GRCh38")
+    df += parse_pafs(hg19_ddir, "GRCh37")
 
     df = pd.DataFrame(df, columns=["RefSeq", "Truth", "NM", "de"])
+
     for i, refseq in enumerate(REFSEQS):
         subdf = df[df["RefSeq"] == refseq]
         sns.histplot(
@@ -366,7 +367,7 @@ def main():
             legend=True if i == 2 else None,
             ax=axes[3][i],
         )
-        axes[3][i].set_ylim(0, 4000)
+        axes[3][i].set_ylim(0, 5000)
         if i == 0:
             axes[3][i].set_ylabel("(d)")
         else:

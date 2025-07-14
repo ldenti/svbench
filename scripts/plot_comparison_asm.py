@@ -44,17 +44,14 @@ def main():
 
     for bench in ["def", "bed"]:
         fig, axes = plt.subplots(1, 3, figsize=(9, 4))
-        for ddir in sys.argv[1:]:
-            i = 0
-            if "hg38" in ddir:
-                i = 1
-            elif "t2t" in ddir:
-                i = 2
-            # assuming this order: t2t, hg38, and hg19
+        for i, ddir in enumerate(sys.argv[1:]):
+            # assuming this order: t2t, hg38, and hg19, but we want reverse order
+            i = 2 - i
+
             M = [[0 for _ in labels] for _ in labels]
             M_annot = [[0 for _ in labels] for _ in labels]
             for t1, t2 in itertools.product(labels, labels):
-                fn = f"{ddir}/comparison-{bench}/{t1}-against-{t2}/summary.json"
+                fn = f"{ddir}/truths/comparison-{bench}/{t1}-against-{t2}/summary.json"
                 P, R, F, TP, FP, FN = parse_summary(fn)
 
                 ACC = round(TP / (TP + FP + FN), 2)
@@ -83,7 +80,7 @@ def main():
                 ax=axes[i],
             )
 
-        x_titles = ["hg19", "hg38", "T2T"]
+        x_titles = ["GRCh37", "GRCh38", "T2T"]
         for ax, title in zip(axes, x_titles):
             ax.set_title(title)
             ax.tick_params(axis="x", labelrotation=0)
@@ -116,9 +113,9 @@ def main_all():
         M3_labels = [["" for _ in labels] for _ in labels]
         for t1, t2 in itertools.product(labels, labels):
             # for t1, t2 in pairs:
-            fn = f"{ddir}/comparison-def/{t1}-against-{t2}/summary.json"
+            fn = f"{ddir}/truths/comparison-def/{t1}-against-{t2}/summary.json"
             P1, R1, F1, TP1, FP1, FN1 = parse_summary(fn)
-            fn = f"{ddir}/comparison-bed/{t1}-against-{t2}/summary.json"
+            fn = f"{ddir}/truths/comparison-bed/{t1}-against-{t2}/summary.json"
             P2, R2, F2, TP2, FP2, FN2 = parse_summary(fn)
 
             M1[indexes[t2]][indexes[t1]] = P1

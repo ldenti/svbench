@@ -50,6 +50,8 @@ def parse_ddir(ddir, refseq=""):
                 continue
             if "-" in tool:
                 tool = tool.split("-")[0]
+            if tool == "SVDSS2ht":
+                tool = "SVDSS2"
             f1 = float(line[-1])
             if f1 == 0:
                 continue
@@ -65,8 +67,8 @@ def main():
 
     data = []
     data += parse_ddir(t2t_ddir, "T2T")
-    data += parse_ddir(hg38_ddir, "hg38")
-    data += parse_ddir(hg19_ddir, "hg19")
+    data += parse_ddir(hg38_ddir, "GRCh38")
+    data += parse_ddir(hg19_ddir, "GRCh37")
 
     df = pd.DataFrame(data, columns=["RefSeq", "Truth", "Bench", "Tool", "F1"])
     print(df)
@@ -80,7 +82,7 @@ def main():
 
     markers = {"Easy": "o", "Hard": "x"}
 
-    refseqs = ["hg19", "hg38", "T2T"]
+    refseqs = ["GRCh37", "GRCh38", "T2T"]
 
     fig, axes = plt.subplots(1, 3, figsize=(10, 4), sharey=True)
 

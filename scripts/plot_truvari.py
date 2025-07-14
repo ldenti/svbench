@@ -37,7 +37,7 @@ def parse_ddir(ddir, refseq=""):
     for csv_fp in glob.glob(f"{ddir}/*.csv"):
         truth, bench, _ = csv_fp.split("/")[-1].split(".")
         if truth == "severus-paper":
-            truth = "hapdiff"
+            continue  # truth = "hapdiff"
         for line in open(csv_fp):
             if line.startswith("Tool"):
                 continue
@@ -49,6 +49,8 @@ def parse_ddir(ddir, refseq=""):
                 continue
             if "-" in tool:
                 tool = tool.split("-")[0]
+            if tool == "SVDSS2ht":
+                tool = "SVDSS2"
             f1 = float(line[-1])
             if f1 == 0:
                 continue
@@ -108,8 +110,8 @@ def main_matrix():
 
     data = []
     data += parse_ddir(t2t_ddir, "T2T")
-    data += parse_ddir(hg38_ddir, "hg38")
-    data += parse_ddir(hg19_ddir, "hg19")
+    data += parse_ddir(hg38_ddir, "GRCh38")
+    data += parse_ddir(hg19_ddir, "GRCh37")
 
     df = pd.DataFrame(data, columns=["RefSeq", "Truth", "Bench", "Tool", "F1"])
     print(df)
@@ -148,7 +150,15 @@ def main_matrix():
     #         ax.bar_label(ax.containers[1], rotation=90)
     #         ax.bar_label(ax.containers[2], rotation=90)
 
-    sns.move_legend(g, "upper left", bbox_to_anchor=(0.07, 0.95), title="", ncol=3)
+    sns.move_legend(
+        g,
+        "upper left",
+        bbox_to_anchor=(0.07, 0.95),
+        title="",
+        ncol=3,
+        handletextpad=0.2,
+        columnspacing=1,
+    )
     plt.tight_layout()
     plt.show()
     # plt.savefig(ddir + "/truvari-all.f1.png", dpi=300)
@@ -169,7 +179,7 @@ def main_matrix():
         ax=ax1,
     )
     ax1.set_xlim(35, 100)
-    sns.move_legend(ax1, "lower right")
+    sns.move_legend(ax1, "upper left")
     # ax1.set_title("(a)")
     # sns.stripplot(
     #     df[(df["RefSeq"] == "hg38") & (df["Bench"] == "truvari-nosim")],

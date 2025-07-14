@@ -20,7 +20,7 @@ rule assemblybased_pairwise_truvari:
         "../envs/truvari.yml"
     shell:
         """
-        truvari bench -s 30 -S 30 -c {input.vcf2} -b {input.vcf1} -o {output} {params.includebed}
+        truvari bench -s 50 -S 50 -c {input.vcf2} -b {input.vcf1} -o {output} --passonly {params.includebed}
         """
 
 

@@ -1,6 +1,7 @@
 wildcard_constraints:
     h="(1)|(2)",
-    mode="(def)|(bed)"
+    mode="(def)|(bed)",
+
 
 # === Pairwise comparison
 # ===========================
@@ -12,13 +13,16 @@ rule assemblybased_pairwise_truvari:
     output:
         directory(pjoin(WD, "truths", "comparison-{mode}", "{truth2}-against-{truth1}")),
     params:
-        includebed=lambda wildcards: "" if wildcards.mode == "def" else f"--includebed {DIPBED}"
+        includebed=lambda wildcards: (
+            "" if wildcards.mode == "def" else f"--includebed {DIPBED}"
+        ),
     conda:
         "../envs/truvari.yml"
     shell:
         """
-        truvari bench -s 50 -S 50 -c {input.vcf2} -b {input.vcf1} -o {output} {params.includebed}
+        truvari bench -s 30 -S 30 -c {input.vcf2} -b {input.vcf1} -o {output} {params.includebed}
         """
+
 
 # === TTmars-like analysis
 # ============================
@@ -58,11 +62,13 @@ rule get_contigs:
         txt=rules.vcf2regions.output.txt,
     output:
         fa=pjoin(WD, "truths", "{asm}.hap{h}-w{w}.fa"),
+    params:
+        tag=lambda wildcards: "first" if wildcards.h == "1" else "second",
     conda:
         "../envs/sambcftools.yml"
     shell:
         """
-        grep "first" {input.txt} | cut -f1 -d" " | while read region ; do samtools faidx {input.fa} $region | $CONDA_PREFIX/bin/bcftools consensus {input.vcf} -H {wildcards.h} ; done > {output.fa} 2> {output.fa}.log
+        grep {params.tag} {input.txt} | cut -f1 -d" " | while read region ; do samtools faidx {input.fa} $region | $CONDA_PREFIX/bin/bcftools consensus {input.vcf} -H {wildcards.h} ; done > {output.fa} 2> {output.fa}.log
         """
 
 
@@ -78,7 +84,7 @@ rule cat_real_contigs:
         """
 
 
-rule cat_artificial_contigs:
+rule cat_alternative_contigs:
     input:
         fa1=pjoin(WD, "truths", "{asm}.hap1-w{w}.fa"),
         fa2=pjoin(WD, "truths", "{asm}.hap2-w{w}.fa"),
@@ -90,7 +96,7 @@ rule cat_artificial_contigs:
         """
 
 
-rule minimap2:
+rule align_alternative_contigs:
     input:
         tfa=pjoin(WD, "real-contigs.fa"),
         qfa=pjoin(WD, "truths", "{asm}.haps-w{w}.fa"),
@@ -103,4 +109,3 @@ rule minimap2:
         """
         minimap2 -t{threads} -c {input.tfa} {input.qfa} > {output.paf}
         """
-

@@ -156,7 +156,6 @@ rule hapdiff:
     shell:
         """
         {input.exe} --reference {input.fa} --pat {input.hap1} --mat {input.hap2} --out-dir {params.outd} -t {threads}
-        tabix -f -p vcf {output.vcf}
         """
 
 

@@ -57,10 +57,12 @@ rule all:
         expand(pjoin(WD, "truths", "{truth}.vcf.gz"), truth=TRUTHS),
         # from callers-asm-post.smk
         expand(pjoin(WD, "truths", "{truth}.haps-w500.paf"), truth=TRUTHS),
-        expand(pjoin(WD, "truths", "comparison-{mode}", "{truth2}-against-{truth1}"),
-               mode=["def", "bed"],
-               truth1=TRUTHS,
-               truth2=TRUTHS),
+        expand(
+            pjoin(WD, "truths", "comparison-{mode}", "{truth2}-against-{truth1}"),
+            mode=["def", "bed"],
+            truth1=TRUTHS,
+            truth2=TRUTHS,
+        ),
         # from truvari.smk
         expand(
             pjoin(WD, "{truth}.truvari-{opt}.csv.png"),

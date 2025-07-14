@@ -2,6 +2,7 @@ rule truvari:
     input:
         vcf=pjoin(WD, "callsets", "{caller}.vcf.gz"),
         truth=pjoin(WD, "truths", "{truth}.vcf.gz"),
+        bed=DIPBED,
     output:
         directory(pjoin(WD, "truvari-{truth}-{option}", "{caller}")),
     params:

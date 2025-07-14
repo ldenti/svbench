@@ -9,8 +9,8 @@ from os.path import join as pjoin
 SAMPLE_NAME = config["name"]
 REF = config["fa"]
 FQ = config["fq"]
-HAP1 = config["hap1"]
-HAP2 = config["hap2"]
+HAP1 = config["hap-pat"]
+HAP2 = config["hap-mat"]
 WD = config["wd"]
 TRF = config["trf"]
 
@@ -40,8 +40,7 @@ include: "rules/svdss.smk"
 truvari_options = {
     "def": "--passonly --dup-to-ins",
     "nosim": "--passonly --dup-to-ins -p 0",
-    "bed": "--passonly --dup-to-ins --includebed "
-    + DIPBED,  # XXX: DIPBED is actually not an input for truvari rule
+    "bed": "--passonly --dup-to-ins --includebed " + DIPBED,
     "easybed": "--passonly --dup-to-ins --includebed " + EASYBED,
     "hardbed": "--passonly --dup-to-ins --includebed " + HARDBED,
     "sev": "--passonly --typeignore --dup-to-ins -p 0 -s 30 -S 0",
@@ -54,8 +53,14 @@ include: "rules/minda.smk"
 
 rule all:
     input:
+        # from callers-asm.smk
+        expand(pjoin(WD, "truths", "{truth}.vcf.gz"), truth=TRUTHS),
         # from callers-asm-post.smk
         expand(pjoin(WD, "truths", "{truth}.haps-w500.paf"), truth=TRUTHS),
+        expand(pjoin(WD, "truths", "comparison-{mode}", "{truth2}-against-{truth1}"),
+               mode=["def", "bed"],
+               truth1=TRUTHS,
+               truth2=TRUTHS),
         # from truvari.smk
         expand(
             pjoin(WD, "{truth}.truvari-{opt}.csv.png"),

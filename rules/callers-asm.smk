@@ -1,21 +1,21 @@
-DIPBED = pjoin(WD, "dipcall", "prefix.dip.bed")
+DIPBED = pjoin(WD, "truths", "dipcall", "prefix.dip.bed")
 
 
 rule dipcall:
     input:
         fa=REF,
         # bed=PARBED,
-        hap1=HAP1,
-        hap2=HAP2,
+        hap1=HAP1,  # paternal
+        hap2=HAP2,  # maternal
     output:
-        vcf=pjoin(WD, "dipcall", "prefix.dip.vcf.gz"),
-        bed=pjoin(WD, "dipcall", "prefix.dip.bed"),
-        bam1=pjoin(WD, "dipcall", "prefix.hap1.bam"),
-        bam2=pjoin(WD, "dipcall", "prefix.hap2.bam"),
+        vcf=pjoin(WD, "truths", "dipcall", "prefix.dip.vcf.gz"),
+        bed=pjoin(WD, "truths", "dipcall", "prefix.dip.bed"),  # DIPBED
+        bam1=pjoin(WD, "truths", "dipcall", "prefix.hap1.bam"),
+        bam2=pjoin(WD, "truths", "dipcall", "prefix.hap2.bam"),
     params:
-        wdir=pjoin(WD, "dipcall"),
-        prefix=pjoin(WD, "dipcall", "prefix"),
-        mak=pjoin(WD, "dipcall.mak"),
+        wdir=pjoin(WD, "truths", "dipcall"),
+        prefix=pjoin(WD, "truths", "dipcall", "prefix"),
+        mak=pjoin(WD, "truths", "dipcall.mak"),
     threads: workflow.cores
     conda:
         "../envs/dipcall.yml"
@@ -32,8 +32,9 @@ rule dipcall:
 
 rule clean_dipcall:
     input:
-        bed=pjoin(WD, "dipcall", "prefix.dip.bed"),
-        vcf=pjoin(WD, "dipcall", "prefix.dip.vcf.gz"),
+        fai=REF + ".fai",
+        bed=pjoin(WD, "truths", "dipcall", "prefix.dip.bed"),
+        vcf=pjoin(WD, "truths", "dipcall", "prefix.dip.vcf.gz"),
     output:
         vcf=pjoin(WD, "truths", "dipcall.vcf.gz"),
         bed=pjoin(WD, "truths", "dipcall.bed"),
@@ -41,7 +42,7 @@ rule clean_dipcall:
         "../envs/dipcall.yml"
     shell:
         """
-        bcftools view -v indels -i '(ILEN <= -30 || ILEN >= 30)' {input.vcf} | bcftools norm --multiallelics - -Oz > {output.vcf}
+        bcftools reheader --fai {input.fai} {input.vcf} | bcftools view -v indels -i '(ILEN <= -30 || ILEN >= 30)' | bcftools norm --multiallelics - -Oz > {output.vcf}
         tabix -p vcf {output.vcf}
         cp {input.bed} {output.bed}
         """
@@ -91,12 +92,12 @@ rule clean_dipcall:
 rule svim_asm:
     input:
         fa=REF,
-        bam1=pjoin(WD, "dipcall", "prefix.hap1.bam"),
-        bam2=pjoin(WD, "dipcall", "prefix.hap2.bam"),
+        bam1=pjoin(WD, "truths", "dipcall", "prefix.hap1.bam"),
+        bam2=pjoin(WD, "truths", "dipcall", "prefix.hap2.bam"),
     output:
-        vcf=pjoin(WD, "svim-asm", "variants.vcf"),
+        vcf=pjoin(WD, "truths", "svim-asm", "variants.vcf"),
     params:
-        wd=pjoin(WD, "svim-asm"),
+        wd=pjoin(WD, "truths", "svim-asm"),
     conda:
         "../envs/svimasm.yml"
     shell:
@@ -108,7 +109,7 @@ rule svim_asm:
 
 rule clean_svim_asm:
     input:
-        vcf=pjoin(WD, "svim-asm", "variants.vcf"),
+        vcf=pjoin(WD, "truths", "svim-asm", "variants.vcf"),
     output:
         vcf=pjoin(WD, "truths", "svim-asm.vcf.gz"),
     conda:
@@ -155,6 +156,7 @@ rule hapdiff:
     shell:
         """
         {input.exe} --reference {input.fa} --pat {input.hap1} --mat {input.hap2} --out-dir {params.outd} -t {threads}
+        tabix -f -p vcf {output.vcf}
         """
 
 
@@ -167,6 +169,6 @@ rule hapdiff_post:
         "../envs/dipcall.yml"
     shell:
         """
-        cp {input.vcf} {output.vcf}
-        cp {input.vcf}.tbi {output.vcf}.tbi
+        bcftools view -Oz -v indels -i '(ILEN <= -30 || ILEN >= 30)' {input.vcf} > {output.vcf}
+        tabix -p vcf {output.vcf}
         """

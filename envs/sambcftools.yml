@@ -1,8 +1,9 @@
 name: sambcftools
 channels:
+  - conda-forge
   - bioconda
 dependencies:
-  - bcftools
+  - bcftools=1.22
   - samtools
   - pysam
   - tabix

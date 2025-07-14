@@ -2,7 +2,20 @@ BAM = pjoin(WD, "minimap2.bam")
 BAM_HT = pjoin(WD, "minimap2-haplotagged.bam")
 
 
-rule minimap:
+rule faidx:
+    input:
+        REF,
+    output:
+        REF + ".fai",
+    conda:
+        "../envs/samtools.yml"
+    shell:
+        """
+        samtools faidx {input}
+        """
+
+
+rule align_reads:
     input:
         fa=REF,
         fq=FQ,

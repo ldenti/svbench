@@ -42,7 +42,7 @@ rule clean_dipcall:
         "../envs/dipcall.yml"
     shell:
         """
-        bcftools reheader --fai {input.fai} {input.vcf} | bcftools view -v indels -i '(ILEN <= -30 || ILEN >= 30)' | bcftools norm --multiallelics - -Oz > {output.vcf}
+        bcftools reheader --fai {input.fai} {input.vcf} | bcftools norm --multiallelics - | bcftools view -v indels -i '(ILEN <= -30 || ILEN >= 30)' -Oz > {output.vcf}
         tabix -p vcf {output.vcf}
         cp {input.bed} {output.bed}
         """

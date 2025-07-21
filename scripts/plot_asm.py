@@ -356,6 +356,9 @@ def main():
 
     for i, refseq in enumerate(REFSEQS):
         subdf = df[df["RefSeq"] == refseq]
+        for truth in TRUTHS:
+            print(refseq, truth)
+            print(subdf[subdf["Truth"] == truth]["NM"].describe())
         sns.histplot(
             data=subdf,
             x="NM",

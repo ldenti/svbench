@@ -1,13 +1,8 @@
 # Analyses
 
-This folder contains all the scripts needed to reproduce the results presented in the manuscript.
-
-We ran the snakemake pipeline six times: three reference genomes and two HG002 assemblies (HG002 contigs from  HPRC and T2T HG002 haplotypes from GIAB). Since we use the same read sample, you can avoid running all read-based callers twice by symbolic linking the "callsets" directory (from one assembly output folder to the other, and then run the snakemake pipeline).
+This folder contains all the scripts needed to reproduce the results presented in the manuscript. We ran the snakemake pipeline three times, one per reference genome.
 
 All the scripts assume `truvari` and `seaborn` to be installed.
-
-## Single assembly analyses
-These scripts analyze the results obtained from a single assembly.
 
 #### Assembly-based analysis
 The folder `truth` in the snakemake output directory contains the assembly-based truth sets. They can be analyzed using the following commands:
@@ -16,7 +11,7 @@ The folder `truth` in the snakemake output directory contains the assembly-based
 python3 ./plot_asm.py $t2t_smk_wd $hg38_smk_wd $hg19_smk_wd
 
 # Three genomes heatmap (jaccard similarity/accuracy)
-python3 ./plot_comparison_asm.py $t2t_smk_wd/truths $hg38_smk_wd/truths $hg19_smk_wd/truths
+python3 ./plot_comparison_asm.py $t2t_smk_wd $hg38_smk_wd $hg19_smk_wd
 ```
 
 #### Read-based vs assembly-based
@@ -52,6 +47,7 @@ python3 ./format_truvari.py $WD/giab-v0.6/truvari-def > $hg_19wd/truvari-def.gia
 python3 ./plot_giab.py truvari-def.giab-v1.1.t2t.csv truvari-def.giab-v1.1.hg38.csv truvari-def.giab-v1.1.hg19.csv truvari-def.giab-v0.6.csv
 ```
 
+<!--
 ## Double assembly analyses
 These scripts analyze the results obtained from both assemblies:
 1. run the snakemake on 3 references using HPRC contigs
@@ -75,6 +71,7 @@ This will produce a rankmap containing both assemblies and the GIAB v1.1 truth s
 python3 scripts/plot_rankmap.py hg38.smk_workdir_on_hprc hg38.smk_workdir_on_giab PlotTitle
 # ^ adapt for other references
 ```
+-->
 
 ## Data
 - Reference sequences and annotations:

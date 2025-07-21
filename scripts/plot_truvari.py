@@ -7,16 +7,16 @@ import seaborn as sns
 
 sns.set(style="whitegrid")
 
-TOOLS = [
-    "cutesv-w4",
-    "debreak",
-    "sawfish",
-    "severus-w4",
-    "sniffles",
-    "svisionpro-w4",
-    "SVDSS-w4",
-    "SVDSS2ht-q0.98-w4",
-]
+TOOLS = {
+    "cutesv-w4": "cuteSV",
+    "debreak": "debreak",
+    "sawfish": "sawfish",
+    "severus-w4": "severus",
+    "sniffles": "sniffles",
+    "svisionpro-w4": "SVision-pro",
+    "SVDSS-w4": "SVDSS",
+    "SVDSS2ht-q0.98-w4": "SVDSS2",
+}
 
 BENCHS = [
     "truvari-def",
@@ -38,6 +38,8 @@ def parse_ddir(ddir, refseq=""):
         truth, bench, _ = csv_fp.split("/")[-1].split(".")
         if truth == "severus-paper":
             continue  # truth = "hapdiff"
+        if truth == "giab-v11":
+            continue
         for line in open(csv_fp):
             if line.startswith("Tool"):
                 continue
@@ -47,10 +49,7 @@ def parse_ddir(ddir, refseq=""):
                 continue
             if bench not in BENCHS:
                 continue
-            if "-" in tool:
-                tool = tool.split("-")[0]
-            if tool == "SVDSS2ht":
-                tool = "SVDSS2"
+            tool = TOOLS[tool]
             f1 = float(line[-1])
             if f1 == 0:
                 continue
@@ -71,6 +70,8 @@ def main_rankmap():
     truths.sort()
     tools = list(df["Tool"].unique())
     tools.sort()
+    # force svision-pro to be the last one
+    tools = tools[:2] + tools[3:] + [tools[2]]
 
     fig, axes = plt.subplots(1, 3)
     for i, bench in enumerate(BENCHS):
@@ -141,7 +142,7 @@ def main_matrix():
         legend_out=False,
     )
 
-    g.tick_params(axis="x", labelrotation=45)  # set_xticklabels(rotation=90)
+    g.tick_params(axis="x", labelrotation=60)  # set_xticklabels(rotation=90)
     g.set(ylim=(0, 100))
 
     # for row in g.axes:
@@ -153,7 +154,7 @@ def main_matrix():
     sns.move_legend(
         g,
         "upper left",
-        bbox_to_anchor=(0.07, 0.95),
+        bbox_to_anchor=(0.07, 0.963),
         title="",
         ncol=3,
         handletextpad=0.2,

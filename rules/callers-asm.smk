@@ -103,7 +103,7 @@ rule svim_asm:
     shell:
         """
         mkdir -p {params.wd}
-        svim-asm diploid {params.wd} {input.bam1} {input.bam2} {input.fa}
+        svim-asm diploid --min_sv_size 30 {params.wd} {input.bam1} {input.bam2} {input.fa}
         """
 
 

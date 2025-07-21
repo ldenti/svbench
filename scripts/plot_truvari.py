@@ -40,6 +40,8 @@ def parse_ddir(ddir, refseq=""):
             continue  # truth = "hapdiff"
         if truth == "giab-v11":
             continue
+        if truth == "svim-asm":
+            truth = "SVIM-asm"
         for line in open(csv_fp):
             if line.startswith("Tool"):
                 continue
@@ -68,6 +70,7 @@ def main_rankmap():
 
     truths = list(df["Truth"].unique())
     truths.sort()
+    truths = ["dipcall", "SVIM-asm", "hapdiff"]
     tools = list(df["Tool"].unique())
     tools.sort()
     # force svision-pro to be the last one
@@ -119,8 +122,9 @@ def main_matrix():
 
     tools = df["Tool"].unique()
     tools.sort()
-    ro = df["Truth"].unique()
-    ro.sort()
+    # ro = df["Truth"].unique()
+    # ro.sort()
+    ro = ["dipcall", "SVIM-asm", "hapdiff"]
     co = BENCHS
 
     g = sns.catplot(
@@ -154,7 +158,7 @@ def main_matrix():
     sns.move_legend(
         g,
         "upper left",
-        bbox_to_anchor=(0.07, 0.963),
+        bbox_to_anchor=(0.07, 0.95),
         title="",
         ncol=3,
         handletextpad=0.2,

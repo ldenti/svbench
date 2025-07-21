@@ -40,7 +40,9 @@ def parse_ddir(ddir, refseq=""):
             bench = "Hard"
 
         if truth == "severus-paper":
-            truth = "hapdiff"
+            continue
+        if truth == "svim-asm":
+            truth = "SVIM-asm"
         for line in open(csv_fp):
             if line.startswith("Tool"):
                 continue
@@ -78,7 +80,7 @@ def main():
     xticks = {tool: i for i, tool in enumerate(tools, 1)}
 
     xoff = 0.25
-    x_offsets = {"dipcall": (-xoff, "r"), "svim-asm": (0, "g"), "hapdiff": (xoff, "b")}
+    x_offsets = {"dipcall": (-xoff, "r"), "SVIM-asm": (0, "g"), "hapdiff": (xoff, "b")}
 
     markers = {"Easy": "o", "Hard": "x"}
 
@@ -112,7 +114,7 @@ def main():
 
     legend_elements = [
         Patch(facecolor="r", edgecolor="r", label="dipcall"),
-        Patch(facecolor="g", edgecolor="g", label="svim-asm"),
+        Patch(facecolor="g", edgecolor="g", label="SVIM-asm"),
         Patch(facecolor="b", edgecolor="b", label="hapdiff"),
         Line2D(
             [0],

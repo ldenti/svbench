@@ -34,13 +34,8 @@ def parse_summary(fpath):
 def main():
     print("This script assumes <= 3 truth callsets!", file=sys.stderr)
 
-    labels = ["dipcall", "svim-asm", "hapdiff"]
+    labels = ["dipcall", "SVIM-asm", "hapdiff"]
     indexes = {"dipcall": 0, "svim-asm": 1, "hapdiff": 2}
-    pairs = [
-        ("dipcall", "svim-asm"),
-        ("dipcall", "hapdiff"),
-        ("svim-asm", "hapdiff"),
-    ]
 
     for bench in ["def", "bed"]:
         fig, axes = plt.subplots(1, 3, figsize=(9, 4))
@@ -51,6 +46,8 @@ def main():
             M = [[0 for _ in labels] for _ in labels]
             M_annot = [[0 for _ in labels] for _ in labels]
             for t1, t2 in itertools.product(labels, labels):
+                t1 = t1.lower()
+                t2 = t2.lower()
                 fn = f"{ddir}/truths/comparison-{bench}/{t1}-against-{t2}/summary.json"
                 P, R, F, TP, FP, FN = parse_summary(fn)
 

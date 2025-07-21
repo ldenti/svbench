@@ -275,7 +275,8 @@ def main():
             axes[0][i].set_yticklabels([])
         if i == 2:
             # move legends
-            sns.move_legend(axes[0][i], "center left", bbox_to_anchor=(1, 0.5))
+            axes[0][i].legend(ncols=2, handletextpad=0.2, columnspacing=0.2)
+            # sns.move_legend(axes[0][i], "center left", bbox_to_anchor=(1, 0.5))
 
         # ax1.bar_label(ax1.containers[0])
         # ax1.bar_label(ax1.containers[1])
@@ -289,7 +290,7 @@ def main():
             hue_order=TRUTHS,
             element="poly",
             fill=False,
-            legend=True if i == 2 else None,
+            legend=False, # True if i == 2 else None,
             ax=axes[1][i],
         )
         axes[1][i].set_xlabel("Length")
@@ -301,8 +302,8 @@ def main():
         if i != 0:
             # remove y-ticks
             axes[1][i].set_yticklabels([])
-        if i == 2:
-            sns.move_legend(axes[1][i], "center left", bbox_to_anchor=(1, 0.5))
+        # if i == 2:
+        #     sns.move_legend(axes[1][i], "center left", bbox_to_anchor=(1, 0.5))
 
     # neighbor distribution per truthset
     for i, truths in enumerate([hg19_truth, hg38_truth, t2t_truth]):
@@ -336,15 +337,15 @@ def main():
             hue="Truth",
             hue_order=TRUTHS,
             ax=axes[2][i],
-            legend=True if i == 2 else None,
+            legend=False, # True if i == 2 else None,
         )
         axes[2][i].set_ylim(0, 30000)
         axes[2][i].set_ylabel("")  # Count
         if i == 0:
             axes[2][i].set_ylabel("(c)")
-        if i == 2:
-            # move legends
-            sns.move_legend(axes[2][i], "center left", bbox_to_anchor=(1, 0.5))
+        # if i == 2:
+        #     # move legends
+        #     sns.move_legend(axes[2][i], "center left", bbox_to_anchor=(1, 0.5))
 
     # --- NM ttmars-like
     df = []
@@ -359,25 +360,32 @@ def main():
         for truth in TRUTHS:
             print(refseq, truth)
             print(subdf[subdf["Truth"] == truth]["NM"].describe())
-        sns.histplot(
-            data=subdf,
-            x="NM",
-            hue="Truth",
-            hue_order=TRUTHS,
-            binrange=[0, 50],
-            discrete=True,
-            element="step",
-            legend=True if i == 2 else None,
-            ax=axes[3][i],
+        # sns.histplot(
+        #     data=subdf,
+        #     x="NM",
+        #     hue="Truth",
+        #     hue_order=TRUTHS,
+        #     binrange=[0, 50],
+        #     discrete=True,
+        #     element="step",
+        #     legend=True if i == 2 else None,
+        #     ax=axes[3][i],
+        # )
+        sns.boxplot(data=subdf, # [subdf["NM"] < 100],
+                    x="Truth",
+                    y="NM",
+                    hue="Truth",
+                    showfliers=False,
+                    ax=axes[3][i],
         )
-        axes[3][i].set_ylim(0, 5000)
+        axes[3][i].set_ylim(-10, 325)
         if i == 0:
             axes[3][i].set_ylabel("(d)")
         else:
             axes[3][i].set_ylabel("")
-        if i == 2:
-            # move legends
-            sns.move_legend(axes[3][i], "center left", bbox_to_anchor=(1, 0.5))
+        # if i == 2:
+        #     # move legends
+        #     sns.move_legend(axes[3][i], "center left", bbox_to_anchor=(1, 0.5))
     plt.tight_layout()
     plt.show()
     # plt.savefig("x.pdf")

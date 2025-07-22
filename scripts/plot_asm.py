@@ -265,11 +265,11 @@ def main():
             ax=axes[0][i],
         )
         axes[0][i].set_xlabel("")  # Truth
-        axes[0][i].tick_params(axis="x", labelrotation=20)
+        axes[0][i].tick_params(axis="x", labelrotation=0)
         axes[0][i].set_ylim(0, 19000)  # Count
         axes[0][i].set_ylabel("")  # Count
         if i == 0:
-            axes[0][i].set_ylabel("(a)")
+            axes[0][i].set_ylabel("(a)\nCount")
         if i != 0:
             # remove y-ticks
             axes[0][i].set_yticklabels([])
@@ -290,7 +290,7 @@ def main():
             hue_order=TRUTHS,
             element="poly",
             fill=False,
-            legend=False, # True if i == 2 else None,
+            legend=False,  # True if i == 2 else None,
             ax=axes[1][i],
         )
         axes[1][i].set_xlabel("Length")
@@ -298,7 +298,7 @@ def main():
         axes[1][i].set_ylabel("")  # Count
         axes[1][i].set_ylim(0, 2000)
         if i == 0:
-            axes[1][i].set_ylabel("(b)")
+            axes[1][i].set_ylabel("(b)\nCount")
         if i != 0:
             # remove y-ticks
             axes[1][i].set_yticklabels([])
@@ -337,12 +337,12 @@ def main():
             hue="Truth",
             hue_order=TRUTHS,
             ax=axes[2][i],
-            legend=False, # True if i == 2 else None,
+            legend=False,  # True if i == 2 else None,
         )
         axes[2][i].set_ylim(0, 30000)
         axes[2][i].set_ylabel("")  # Count
         if i == 0:
-            axes[2][i].set_ylabel("(c)")
+            axes[2][i].set_ylabel("(c)\nCount")
         # if i == 2:
         #     # move legends
         #     sns.move_legend(axes[2][i], "center left", bbox_to_anchor=(1, 0.5))
@@ -371,16 +371,19 @@ def main():
         #     legend=True if i == 2 else None,
         #     ax=axes[3][i],
         # )
-        sns.boxplot(data=subdf, # [subdf["NM"] < 100],
-                    x="Truth",
-                    y="NM",
-                    hue="Truth",
-                    showfliers=False,
-                    ax=axes[3][i],
+        sns.boxplot(
+            data=subdf,  # [subdf["NM"] < 100],
+            x="Truth",
+            y="NM",
+            hue="Truth",
+            order=TRUTHS,
+            hue_order=TRUTHS,
+            showfliers=False,
+            ax=axes[3][i],
         )
         axes[3][i].set_ylim(-10, 325)
         if i == 0:
-            axes[3][i].set_ylabel("(d)")
+            axes[3][i].set_ylabel("(d)\nNM")
         else:
             axes[3][i].set_ylabel("")
         # if i == 2:

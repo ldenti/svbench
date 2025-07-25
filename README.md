@@ -49,3 +49,6 @@ Benchmarkers:
 * truvari (v5.2.0)
 * minda (commit 47d0fb5484b2b15865a94a9ba81436beaf52cf16)
   * no analysis on minda results
+
+### Experiments
+To replicate the experiments presented in the manuscript, follow the [instructions](https://github.com/ldenti/svbench/blob/main/scripts/README.md) in the `scripts` folder.

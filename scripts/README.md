@@ -1,8 +1,8 @@
 # Analyses
 
-This folder contains all the scripts needed to reproduce the results presented in the manuscript. We ran the snakemake pipeline three times, one per reference genome.
+This folder contains all the scripts needed to reproduce the results presented in the manuscript. All the scripts assume `truvari` and `seaborn` to be installed (e.g., via conda).
 
-All the scripts assume `truvari` and `seaborn` to be installed.
+We ran the Snakemake pipeline three times, one per reference genome (i.e., hg19, hg38, t2t). For each reference genome, update the [configuration `config/config.yml`](https://github.com/ldenti/svbench/blob/main/config/config.yml) and run the Snakemake pipeline. We assume the variables `{hg19,hg38,t2t}_smk_wd` to be the path to the output directories of the three Snakemake runs (one per reference sequence).
 
 #### Assembly-based analysis
 The folder `truth` in the snakemake output directory contains the assembly-based truth sets. They can be analyzed using the following commands:
@@ -33,7 +33,6 @@ wget https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTri
 # run this for all three reference sequences:
 bcftools view -Oz -v indels -i '(ILEN <= -30 || ILEN >= 30)' CHM13v2.0_HG2-T2TQ100-V1.1_stvar.vcf.gz > CHM13v2.0-HG2.sv.vcf.gz
 tabix -p vcf CHM13v2.0-HG2.sv.vcf.gz
-
 bash ./truvari_on_giab.sh $t2t_wd/ CHM13v2.0-HG2.sv.vcf.gz CHM13v2.0_HG2-T2TQ100-V1.1_stvar.benchmark.bed 11
 python3 ./format_truvari.py $t2t_wd/giab-v1.1/truvari-def > $t2t_wd/truvari-def.giab-v11.csv
 python3 ./format_truvari.py $t2t_wd/giab-v1.1/truvari-bed > $t2t_wd/truvari-bed.giab-v11.csv

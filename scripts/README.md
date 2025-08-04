@@ -27,23 +27,8 @@ python3 ./plot_giabstrat.py $t2t_smk_wd $hg38_smk_wd $hg19_smk_wd
 
 #### Evaluation against GIAB (v1.1 and v0.6)
 ``` sh
-# Get GIAB v1.1
-wget https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_HG002_DraftBenchmark_defrabbV0.019-20241113/{CHM13v2.0,GRCh37,GRCh38}_HG2-T2TQ100-V1.1_stvar.{vcf.gz,vcf.gz.tbi,benchmark.bed}
-
-# run this for all three reference sequences:
-bcftools view -Oz -v indels -i '(ILEN <= -30 || ILEN >= 30)' CHM13v2.0_HG2-T2TQ100-V1.1_stvar.vcf.gz > CHM13v2.0-HG2.sv.vcf.gz
-tabix -p vcf CHM13v2.0-HG2.sv.vcf.gz
-bash ./truvari_on_giab.sh $t2t_wd/ CHM13v2.0-HG2.sv.vcf.gz CHM13v2.0_HG2-T2TQ100-V1.1_stvar.benchmark.bed 11
-python3 ./format_truvari.py $t2t_wd/giab-v1.1/truvari-def > $t2t_wd/truvari-def.giab-v11.csv
-python3 ./format_truvari.py $t2t_wd/giab-v1.1/truvari-bed > $t2t_wd/truvari-bed.giab-v11.csv
-python3 ./format_truvari.py $t2t_wd/giab-v1.1/truvari-nosim > $t2t_wd/truvari-nosim.giab-v11.csv
-
-# Get GIAB v0.6
-wget https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_SVs_Integration_v0.6/HG002_SVs_Tier1_v0.6.{vcf.gz,vcf.gz.tbi,bed}
-bash ./truvari_on_giab.sh $hg19_wd/ HG002_SVs_Tier1_v0.6.vcf.gz HG002_SVs_Tier1_v0.6.bed 06
-python3 ./format_truvari.py $WD/giab-v0.6/truvari-def > $hg_19wd/truvari-def.giab-v0.6.csv
-
-python3 ./plot_giab.py truvari-def.giab-v1.1.t2t.csv truvari-def.giab-v1.1.hg38.csv truvari-def.giab-v1.1.hg19.csv truvari-def.giab-v0.6.csv
+python3 ./plot_giab.py $t2t_smk_wd/giab-v1.1-def.csv $hg38_smk_wd/giab-v1.1-def.csv $hg19_smk_wd/giab-v1.1-def.csv $hg19_smk_wd/giab-v0.6-def.csv
+# python3 ./plot_giab.py $t2t_smk_wd/giab-v1.1-bed.csv $hg38_smk_wd/giab-v1.1-bed.csv $hg19_smk_wd/giab-v1.1-bed.csv $hg19_smk_wd/giab-v0.6-bed.csv
 ```
 
 <!--
@@ -108,3 +93,16 @@ wget https://s3-us-west-2.amazonaws.com/human-pangenomics/T2T/HG002/assemblies/h
 ```
 
 - HG002 HiFi sample: `m64012_190920_173625`, `m64012_190921_234837`, `m64015_190920_185703`, and `m64015_190922_010918` (from [HPRC](https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=working/HPRC_PLUS/HG002/raw_data/PacBio_HiFi/15kb/))
+
+- GIAB curated SV callsets:
+```
+# Get GIAB v0.6
+wget https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_SVs_Integration_v0.6/HG002_SVs_Tier1_v0.6.{vcf.gz,vcf.gz.tbi,bed}
+
+# Get GIAB v1.1
+wget https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/analysis/NIST_HG002_DraftBenchmark_defrabbV0.019-20241113/{CHM13v2.0,GRCh37,GRCh38}_HG2-T2TQ100-V1.1_stvar.{vcf.gz,vcf.gz.tbi,benchmark.bed}
+
+# run this for all three reference sequences:
+bcftools view -Oz -v indels -i '(ILEN <= -30 || ILEN >= 30)' CHM13v2.0_HG2-T2TQ100-V1.1_stvar.vcf.gz > CHM13v2.0-HG2.sv.vcf.gz
+tabix -p vcf CHM13v2.0-HG2.sv.vcf.gz
+```

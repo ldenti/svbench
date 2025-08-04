@@ -7,6 +7,12 @@ trf: /nfs/projects6/human_chm13v2.0_maskedY_rCRS.trf.bed
 strat:
   easy: /nfs/projects6/giab-strat/CHM13_notinalldifficultregions.bed
   hard: /nfs/projects6/giab-strat/CHM13_alldifficultregions.bed
+giab11:
+  vcf: /nfs/projects6/giab-v1.1/CHM13v2.0-HG2.sv.vcf.gz
+  bed: /nfs/projects6/giab-v1.1/CHM13v2.0_HG2-T2TQ100-V1.1_stvar.benchmark.bed
+giab06:
+  vcf: .
+  bed: .
 wd: /nfs/projects6/hg002/15k-36x-seqII2.0/t2t
 truths:
   - dipcall

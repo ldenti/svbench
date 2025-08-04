@@ -17,6 +17,11 @@ TRF = config["trf"]
 EASYBED = config["strat"]["easy"]
 HARDBED = config["strat"]["hard"]
 
+GIAB11 = config["giab11"]["vcf"]
+GIAB11_BED = config["giab11"]["bed"]
+GIAB06 = config["giab06"]["vcf"]
+GIAB06_BED = config["giab06"]["bed"]
+
 TRUTHS = config["truths"]
 CALLERS = config["callers"]
 
@@ -34,6 +39,8 @@ include: "rules/callers-severus-hg19.smk"
 include: "rules/svdss2.smk"
 include: "rules/svdss2-ht.smk"
 include: "rules/svdss.smk"
+# giab
+include: "rules/giab.smk"
 
 
 # postprocessing
@@ -41,6 +48,7 @@ truvari_options = {
     "def": "--passonly --dup-to-ins",
     "nosim": "--passonly --dup-to-ins -p 0",
     "bed": "--passonly --dup-to-ins --includebed " + DIPBED,
+    "wbed": "--passonly --dup-to-ins --includebed ",
     "easybed": "--passonly --dup-to-ins --includebed " + EASYBED,
     "hardbed": "--passonly --dup-to-ins --includebed " + HARDBED,
     "sev": "--passonly --typeignore --dup-to-ins -p 0 -s 30 -S 0",
@@ -67,8 +75,13 @@ rule all:
         expand(
             pjoin(WD, "{truth}.truvari-{opt}.csv.png"),
             truth=TRUTHS,
-            opt=truvari_options,
+            opt=["def", "nosim", "bed", "easybed", "hardbed"],
         ),
+        # from giab.smk
+        pjoin(WD, "giab-v1.1-def.csv"),
+        pjoin(WD, "giab-v1.1-wbed.csv"),
+        pjoin(WD, "giab-v0.6-def.csv") if GIAB06 != "." else [],
+        pjoin(WD, "giab-v0.6-wbed.csv") if GIAB06 != "." else [],
 
 
 rule copy_truth:

@@ -1,26 +1,32 @@
 wildcard_constraints:
     h="(1)|(2)",
-    mode="(def)|(bed)",
+    mode="(def)|(wbed)",
+    reg="()|(-confident)"
 
 
 # === Pairwise comparison
 # ===========================
 rule assemblybased_pairwise_truvari:
     input:
+        fa=REF,
         vcf1=pjoin(WD, "truths", "{truth1}.vcf.gz"),
         vcf2=pjoin(WD, "truths", "{truth2}.vcf.gz"),
-        bed=DIPBED,
+        bed=lambda wildcards: BED if wildcards.truth1 == "hapdiff" or wildcards.truth2 == "hapdiff" else DIPBED,
     output:
-        directory(pjoin(WD, "truths", "comparison-{mode}", "{truth2}-against-{truth1}")),
+        d=directory(pjoin(WD, "truths", "comparison-{mode}", "{truth2}-against-{truth1}")),
+        dd=directory(pjoin(WD, "truths", "comparison-{mode}", "{truth2}-against-{truth1}", "phab_bench")),
     params:
-        includebed=lambda wildcards: (
-            "" if wildcards.mode == "def" else f"--includebed {DIPBED}"
-        ),
+        opt=lambda wildcards, input: truvari_options[wildcards.mode] + (" " + input.bed if wildcards.mode == "wbed" else ""),
+        aligner="mafft" # lambda wildcards: "poa" if wildcards.mode == "bed" else "mafft",
     conda:
         "../envs/truvari.yml"
+    threads: workflow.cores / 2
     shell:
         """
-        truvari bench -s 50 -S 50 -c {input.vcf2} -b {input.vcf1} -o {output} --passonly {params.includebed}
+        rm -rf {output.d}
+        truvari bench -s 50 -S 50 {params.opt} --reference {input.fa} --base {input.vcf1} --comp {input.vcf2} --output {output.d}
+        truvari refine --reference {input.fa} --regions {output.d}/candidate.refine.bed --coords R --use-original-vcfs --threads {threads} --align {params.aligner} {output.d}
+        truvari ga4gh --input {output.d} --output {output.d}/ga4gh_with_refine # --with-refine
         """
 
 
@@ -30,9 +36,9 @@ rule assemblybased_pairwise_truvari:
 
 rule remove_info:
     input:
-        vcf=pjoin(WD, "truths", "{asm}.vcf.gz"),
+        vcf=pjoin(WD, "truths{reg}", "{asmcaller}.vcf.gz"),
     output:
-        vcf=pjoin(WD, "truths", "{asm}.noinfo.vcf.gz"),
+        vcf=pjoin(WD, "truths{reg}", "{asmcaller}.noinfo.vcf.gz"),
     conda:
         "../envs/sambcftools.yml"
     shell:
@@ -46,7 +52,7 @@ rule vcf2regions:
     input:
         vcf=rules.remove_info.output.vcf,
     output:
-        txt=pjoin(WD, "truths", "{asm}.noinfo.regions-w{w}.txt"),
+        txt=pjoin(WD, "truths{reg}", "{asmcaller}.noinfo.regions-w{w}.txt"),
     conda:
         "../envs/sambcftools.yml"
     shell:
@@ -61,7 +67,7 @@ rule get_contigs:
         vcf=rules.remove_info.output.vcf,
         txt=rules.vcf2regions.output.txt,
     output:
-        fa=pjoin(WD, "truths", "{asm}.hap{h}-w{w}.fa"),
+        fa=pjoin(WD, "truths{reg}", "{asmcaller}.hap{h}-w{w}.fa"),
     params:
         tag=lambda wildcards: "first" if wildcards.h == "1" else "second",
     conda:
@@ -86,10 +92,10 @@ rule cat_real_contigs:
 
 rule cat_alternative_contigs:
     input:
-        fa1=pjoin(WD, "truths", "{asm}.hap1-w{w}.fa"),
-        fa2=pjoin(WD, "truths", "{asm}.hap2-w{w}.fa"),
+        fa1=pjoin(WD, "truths{reg}", "{asmcaller}.hap1-w{w}.fa"),
+        fa2=pjoin(WD, "truths{reg}", "{asmcaller}.hap2-w{w}.fa"),
     output:
-        fa=pjoin(WD, "truths", "{asm}.haps-w{w}.fa"),
+        fa=pjoin(WD, "truths{reg}", "{asmcaller}.haps-w{w}.fa"),
     shell:
         """
         cat {input.fa1} {input.fa2} > {output.fa}
@@ -99,9 +105,9 @@ rule cat_alternative_contigs:
 rule align_alternative_contigs:
     input:
         tfa=pjoin(WD, "real-contigs.fa"),
-        qfa=pjoin(WD, "truths", "{asm}.haps-w{w}.fa"),
+        qfa=pjoin(WD, "truths{reg}", "{asmcaller}.haps-w{w}.fa"),
     output:
-        paf=pjoin(WD, "truths", "{asm}.haps-w{w}.paf"),
+        paf=pjoin(WD, "truths{reg}", "{asmcaller}.haps-w{w}.paf"),
     conda:
         "../envs/minimap2.yml"
     threads: workflow.cores

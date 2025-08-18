@@ -1,17 +1,24 @@
 rule truvari:
     input:
+        fa=REF,
         vcf=pjoin(WD, "callsets", "{caller}.vcf.gz"),
         truth=pjoin(WD, "truths", "{truth}.vcf.gz"),
-        bed=DIPBED,
+        bed=lambda wildcards: HAPBED if wildcards.truth == "hapdiff" else DIPBED,
     output:
-        directory(pjoin(WD, "truvari-{truth}-{option}", "{caller}")),
+        d=directory(pjoin(WD, "truvari-{truth}-{option}", "{caller}")),
+        dd=directory(pjoin(WD, "truvari-{truth}-{option}", "{caller}", "phab_bench")),
     params:
-        opt=lambda wildcards: truvari_options[wildcards.option],
+        opt=lambda wildcards, input: truvari_options[wildcards.option] + (" " + input.bed if wildcards.option == "wbed" else ""),
+        aligner="mafft" # lambda wildcards: "mafft" if wildcards.option == "def" else "poa",
+    threads: workflow.cores / 2
     conda:
         "../envs/truvari.yml"
     shell:
         """
-        truvari bench -c {input.vcf} -b {input.truth} -o {output} {params.opt}
+        rm -rf {output.d}
+        truvari bench {params.opt} --reference {input.fa} --base {input.truth} --comp {input.vcf} --output {output.d}
+        truvari refine --reference {input.fa} --regions {output.d}/candidate.refine.bed --coords R --use-original-vcfs --threads {threads} --align {params.aligner} {output.d}
+        truvari ga4gh --input {output.d} --output {output.d}/ga4gh_with_refine # --with-refine
         """
 
 
@@ -19,12 +26,14 @@ rule format_truvari:
     input:
         expand(pjoin(WD, "truvari-{{truth}}-{{option}}", "{caller}"), caller=CALLERS),
     output:
-        pjoin(WD, "{truth}.truvari-{option}.csv"),
+        csv=pjoin(WD, "{truth}.truvari-{option}.csv"),
+        refcsv=pjoin(WD, "{truth}.truvari-{option}.refine.csv"),
     params:
         bd=pjoin(WD, "truvari-{truth}-{option}"),
     shell:
         """
-        python3 ./scripts/format_truvari.py {params.bd} > {output}
+        python3 ./scripts/format_truvari.py {params.bd} > {output.csv}
+        python3 ./scripts/format_truvari.py --refine {params.bd} > {output.refcsv}
         """
 
 

@@ -1,4 +1,31 @@
 DIPBED = pjoin(WD, "truths", "dipcall", "prefix.dip.bed")
+HAPBED = pjoin(WD, "truths", "hapdiff", "confident_regions.bed")
+BED = pjoin(WD, "truths", "confident_regions.both.bed")
+
+rule intersect_bed:
+    input:
+        bed1=DIPBED,
+        bed2=HAPBED,
+    output:
+        bed=BED,
+    conda:
+        "../envs/bedtools.yml"
+    shell:
+        """
+        bedtools intersect -a {input.bed1} -b {input.bed2} > {output.bed}
+        """
+
+rule subset:
+    input:
+        vcf=pjoin(WD, "truths", "{asmcaller}.vcf.gz"),
+        bed=lambda wildcards: HAPBED if wildcards.asmcaller == "hapdiff" else DIPBED,
+    output:
+        vcf=pjoin(WD, "truths-confident", "{asmcaller}.vcf.gz"),
+    shell:
+        """
+        bedtools intersect -header -a {input.vcf} -b {input.bed} | bgzip -c > {output.vcf}
+        tabix -p vcf {output.vcf}
+        """
 
 
 rule dipcall:
@@ -148,6 +175,7 @@ rule hapdiff:
         hap2=HAP2,
     output:
         vcf=pjoin(WD, "truths", "hapdiff", "hapdiff_phased.vcf.gz"),
+        # bed=pjoin(WD, "truths", "hapdiff", "confident_regions.bed"),
     params:
         outd=pjoin(WD, "truths", "hapdiff"),
     conda:

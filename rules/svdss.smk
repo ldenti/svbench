@@ -43,7 +43,7 @@ rule svdss_call:
         bam=pjoin(WD, "SVDSS", "smoothed.selective.bam"),
         sfs=pjoin(WD, "SVDSS", "solution_batch_0.assembled.sfs"),
     output:
-        vcf=pjoin(WD, "callsets", "SVDSS-w{w}.vcf.gz"),
+        vcf=pjoin(WD, "SVDSS", "w{w}", "svs_poa.vcf"),
     params:
         wd=pjoin(WD, "SVDSS"),
     threads: workflow.cores
@@ -55,6 +55,23 @@ rule svdss_call:
         """
         n=$(ls {params.wd}/solution_batch_*.assembled.sfs | wc -l)
         SVDSS call --reference {input.fa} --bam {input.bam} --threads {threads} --workdir {params.wd} --batches ${{n}} --min-cluster-weight {wildcards.w}
-        bgzip -c {params.wd}/svs_poa.vcf > {output.vcf}
-        tabix -p vcf {output.vcf}
+        cp {params.wd}/svs_poa.vcf {output.vcf}
+        """
+
+rule svdss_post:
+    input:
+        fa=REF,
+        bam=BAM_HT,
+        vcf=pjoin(WD, "SVDSS", "w{w}", "svs_poa.vcf"),
+    output:
+        vcf=pjoin(WD, "callsets", "SVDSS-w{w}.vcf.gz"),
+    conda:
+        "../envs/hiphase.yml"
+    threads: workflow.cores
+    shell:
+        """
+        echo {SAMPLE_NAME} > {input.vcf}.sample.txt
+        bcftools reheader --samples {input.vcf}.sample.txt {input.vcf} | python3 ./scripts/to_upper.py | bgzip -c > {input.vcf}.gz
+        tabix -p vcf {input.vcf}.gz
+        hiphase --bam {input.bam} --reference {input.fa} --vcf {input.vcf}.gz --output-vcf {output.vcf} --threads {threads} > {output.vcf}
         """

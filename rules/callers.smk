@@ -11,7 +11,7 @@ truvari was complaining about BND records, so I decided to remove them.
 rule cutesv:
     input:
         fa=REF,
-        bam=BAM,
+        bam=BAM_HT,
         bed=TRF,
     output:
         vcf=pjoin(WD, "cutesv-{w}", "cutesv-w{w}.full.vcf"),
@@ -25,24 +25,26 @@ rule cutesv:
     shell:
         """
         mkdir -p {params.tmp}
-        /usr/bin/time -vo {log.time} cuteSV --threads {threads} --min_support {wildcards.w} --max_cluster_bias_INS 1000 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 1000 --diff_ratio_merging_DEL 0.5 {input.bam} {input.fa} {output.vcf} {params.tmp} --min_size 50
-        # --genotype --min_mapq 20
+        /usr/bin/time -vo {log.time} cuteSV --sample {SAMPLE_NAME} --min_size 50 --min_mapq 20 --genotype --threads {threads} --min_support {wildcards.w} --max_cluster_bias_INS 1000 --diff_ratio_merging_INS 0.9 --max_cluster_bias_DEL 1000 --diff_ratio_merging_DEL 0.5 {input.bam} {input.fa} {output.vcf} {params.tmp}
         """
 
 
 rule cutesv_post:
     input:
+        fa=REF,
+        bam=BAM_HT,
         vcf=pjoin(WD, "cutesv-{w}", "cutesv-w{w}.full.vcf"),
     output:
         vcf=pjoin(WD, "callsets", "cutesv-w{w}.vcf.gz"),
     conda:
-        "../envs/bcftools.yml"
+        "../envs/hiphase.yml"
+    threads: workflow.cores
     shell:
         """
-        # bgzip -c {input.vcf} > {output.vcf}
-        # bcftools view -Oz --exclude "INFO/SVTYPE='BND' | INFO/SVTYPE='INS' | INFO/SVTYPE='DUP'" {input.vcf} > {output.vcf}
-        bcftools view -Oz --exclude "INFO/SVTYPE='BND'" {input.vcf} > {output.vcf}
-        tabix -p vcf {output.vcf}
+        bcftools view --exclude "INFO/SVTYPE='BND'" {input.vcf} | python3 ./scripts/to_upper.py | bgzip -c > {input.vcf}.gz
+        tabix -p vcf {input.vcf}.gz
+        hiphase --bam {input.bam} --reference {input.fa} --vcf {input.vcf}.gz --output-vcf {output.vcf} --threads {threads}
+        # tabix -p vcf {output.vcf}
         """
 
 
@@ -54,7 +56,7 @@ rule cutesv_post:
 rule sniffles:
     input:
         fa=REF,
-        bam=BAM,
+        bam=BAM_HT,
         bed=TRF,
     output:
         vcf=pjoin(WD, "callsets", "sniffles.full.vcf"),
@@ -65,8 +67,7 @@ rule sniffles:
     threads: workflow.cores
     shell:
         """
-        /usr/bin/time -vo {log.time} sniffles --threads {threads} --reference {input.fa} --input {input.bam} --vcf {output.vcf} --tandem-repeats {input.bed}
-        # --mapq 20 --minsupport auto --phase --minsvlen 50
+        /usr/bin/time -vo {log.time} sniffles --threads {threads} --mapq 20 --minsupport auto --phase --minsvlen 50 --reference {input.fa} --input {input.bam} --vcf {output.vcf} --tandem-repeats {input.bed}
         """
 
 
@@ -81,7 +82,7 @@ rule sniffles_post:
         """
         # bgzip -c {input.vcf} > {output.vcf}
         # bcftools view -Oz --include "INFO/SVTYPE='DEL' | INFO/SVTYPE='INS' | INFO/SVTYPE='DUP'" {input.vcf} > {output.vcf}
-        bcftools view -Oz --exclude "INFO/SVTYPE='BND'" {input.vcf} > {output.vcf}
+        bcftools view --exclude "INFO/SVTYPE='BND'" {input.vcf} | python3 ./scripts/remove_strange_symbolic.py | bgzip -c > {output.vcf}
         tabix -p vcf {output.vcf}
         """
 
@@ -94,7 +95,7 @@ rule sniffles_post:
 rule severus:
     input:
         fa=REF,
-        bam=BAM,
+        bam=BAM_HT,
         bed=TRF,
         vcf=pjoin(WD, "deepvariant-phased.vcf.gz"),
     output:
@@ -108,24 +109,29 @@ rule severus:
     threads: workflow.cores
     shell:
         """
-        /usr/bin/time -vo {log.time} severus --min-mapq 20 --min-support {wildcards.w} --target-bam {input.bam} --vntr-bed {input.bed} --out-dir {params.tmp} -t {threads} --phasing-vcf {input.vcf}
-        # --min-sv-size 50
+        /usr/bin/time -vo {log.time} severus --target-sample {SAMPLE_NAME} --min-sv-size 50 --min-mapq 20 --min-support {wildcards.w} --target-bam {input.bam} --vntr-bed {input.bed} --out-dir {params.tmp} -t {threads} --phasing-vcf {input.vcf}
         """
 
 
 rule severus_post:
     input:
+        fa=REF,
+        bam=BAM_HT,
         vcf=pjoin(WD, "severus-w{w}", "all_SVs", "severus_all.vcf"),
     output:
         vcf=pjoin(WD, "callsets", "severus-w{w}.vcf.gz"),
     conda:
-        "../envs/bcftools.yml"
+        "../envs/hiphase.yml"
+    threads: workflow.cores
     shell:
         """
         # bgzip -c {input.vcf} > {output.vcf}
         # bcftools view -Oz --include "INFO/SVTYPE='DEL' | INFO/SVTYPE='INS' | INFO/SVTYPE='DUP'" {input.vcf} > {output.vcf}
-        bcftools view -Oz --exclude "INFO/SVTYPE='BND'" {input.vcf} > {output.vcf}
-        tabix -p vcf {output.vcf}
+        bcftools view --exclude "INFO/SVTYPE='BND'" {input.vcf} | $CONDA_PREFIX/bin/bcftools +$CONDA_PREFIX/libexec/bcftools/fill-from-fasta.so -- -c REF -f {input.fa} | python3 ./scripts/to_upper.py | sed "s/minimap2/{SAMPLE_NAME}/g" | bgzip -c > {input.vcf}.gz
+        tabix -p vcf {input.vcf}.gz
+        hiphase --bam {input.bam} --reference {input.fa} --vcf {input.vcf}.gz --output-vcf {output.vcf} --threads {threads}
+        # cp {input.vcf}.gz {output.vcf}
+        # cp {input.vcf}.gz.tbi {output.vcf}.tbi
         """
 
 
@@ -136,7 +142,8 @@ rule severus_post:
 
 rule debreak:
     input:
-        bam=BAM,
+        fa=REF,
+        bam=BAM_HT,
     output:
         vcf=pjoin(WD, "debreak", "debreak.vcf"),
     params:
@@ -148,23 +155,28 @@ rule debreak:
     threads: workflow.cores
     shell:
         """
-        debreak -t {threads} --bam {input.bam} -o {params.odir} --min_size 50 --min_quality 20 --aligner minimap2
+        debreak -t {threads} --ref {input.fa} --bam {input.bam} -o {params.odir} --min_size 50 --min_quality 20 --aligner minimap2
         # --min_support 2 # it is estimated from depth, so I will let him decide
         """
 
 
 rule debreak_post:
     input:
+        fa=REF,
+        bam=BAM_HT,
         vcf=pjoin(WD, "debreak", "debreak.vcf"),
     output:
         vcf=pjoin(WD, "callsets", "debreak.vcf.gz"),
     conda:
-        "../envs/bcftools.yml"
+        "../envs/hiphase.yml"
+    threads: workflow.cores
     shell:
         """
-        bgzip -c {input.vcf} > {output.vcf}
+        echo {SAMPLE_NAME} > {input.vcf}.sample.txt
+        bcftools reheader --samples {input.vcf}.sample.txt {input.vcf} | $CONDA_PREFIX/bin/bcftools +$CONDA_PREFIX/libexec/bcftools/fill-from-fasta.so -- -c REF -f {input.fa} | python3 ./scripts/to_upper.py | bgzip -c > {input.vcf}.gz
+        tabix -p vcf {input.vcf}.gz
         # bcftools view -Oz --include "INFO/SVTYPE='DEL' | INFO/SVTYPE='INS' | INFO/SVTYPE='DUP'" {input.vcf} > {output.vcf}
-        tabix -p vcf {output.vcf}
+        hiphase --bam {input.bam} --reference {input.fa} --vcf {input.vcf}.gz --output-vcf {output.vcf} --threads {threads}
         """
 
 
@@ -205,7 +217,7 @@ rule svisionpro:
         # model=pjoin(WD, "software", "svision-pro", "src", "pre_process", "model_liteunet_256_8_16_32_32_32.pth"),
         # ph=pjoin(WD, "software", "svision-pro", "smk-alldone"),
         fa=REF,
-        bam=BAM,
+        bam=BAM_HT,
         model=pjoin(
             WD,
             "software",
@@ -225,24 +237,29 @@ rule svisionpro:
     threads: workflow.cores
     shell:
         """
-        {input.exe} --target_path {input.bam} --genome_path {input.fa} --model_path {input.model} --out_path {params.odir} --sample_name {SAMPLE_NAME} --detect_mode germline --process_num {threads} --min_supp {wildcards.w} --preset hifi
-        # --min_mapq 20 --min_sv_size 20
+        {input.exe} --min_mapq 20 --min_sv_size 50 --target_path {input.bam} --genome_path {input.fa} --model_path {input.model} --out_path {params.odir} --sample_name {SAMPLE_NAME} --detect_mode germline --process_num {threads} --min_supp {wildcards.w} --preset hifi
         """
 
 
 rule svisionpro_post:
     input:
+        fa=REF,
+        bam=BAM_HT,
         vcf=pjoin(WD, "svisionpro-{w}", f"{SAMPLE_NAME}.svision_pro_v2.4.s{{w}}.vcf"),
     output:
         vcf=pjoin(WD, "callsets", "svisionpro-w{w}.vcf.gz"),
     conda:
-        "../envs/bcftools.yml"
+        "../envs/hiphase.yml"
+    threads: workflow.cores
     shell:
         """
         # bgzip -c {input.vcf} > {output.vcf}
-        # bcftools view -Oz --include "INFO/SVTYPE='DEL' | INFO/SVTYPE='INS' | INFO/SVTYPE='DUP'" {input.vcf} > {output.vcf}
-        bcftools sort {input.vcf} | bcftools view -Oz --exclude "INFO/SVTYPE='BND'" > {output.vcf}
-        tabix -p vcf {output.vcf}
+        # bcftools sort {input.vcf} | bcftools view -Oz --include "INFO/SVTYPE='DEL' | INFO/SVTYPE='INS' | INFO/SVTYPE='DUP'" > {output.vcf}
+        # tabix -p vcf {output.vcf}
+        echo {SAMPLE_NAME} > {input.vcf}.sample.txt
+        bcftools sort {input.vcf} | bcftools view --exclude "INFO/SVTYPE='BND'" | python3 ./scripts/to_upper.py | bcftools reheader --samples {input.vcf}.sample.txt | python3 ./scripts/fix_svision.py | bgzip -c > {input.vcf}.gz
+        tabix -p vcf {input.vcf}.gz
+        hiphase --bam {input.bam} --reference {input.fa} --vcf {input.vcf}.gz --output-vcf {output.vcf} --threads {threads} > {output.vcf}
         """
 
 
@@ -254,7 +271,7 @@ rule svisionpro_post:
 rule sawfish_discover:
     input:
         fa=REF,
-        bam=BAM,
+        bam=BAM_HT,
     output:
         odir=directory(pjoin(WD, "sawfish")),
     log:
@@ -265,7 +282,6 @@ rule sawfish_discover:
     shell:
         """
         sawfish discover --min-indel-size 50 --min-sv-mapq 20 --threads 16 --ref {input.fa} --bam {input.bam} --output-dir {output.odir}
-        # --min-sv-mapq 10
         """
 
 
@@ -287,7 +303,7 @@ rule sawfish_jointcall:
     threads: workflow.cores
     shell:
         """
-        sawfish joint-call --threads 16 --sample {input.odir} --output-dir {params.odir}
+        sawfish joint-call --threads {threads} --sample {input.odir} --output-dir {params.odir}
         """
 
 

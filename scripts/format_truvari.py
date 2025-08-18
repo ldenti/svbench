@@ -1,5 +1,6 @@
 import sys
 import os
+import argparse
 import glob
 
 
@@ -20,10 +21,17 @@ def parse_summary(fpath):
 
 
 def main():
-    indir = sys.argv[1]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--refine", action='store_true')
+    parser.add_argument("indir")
+    args = parser.parse_args()
+
+    fname = "summary.json"
+    if args.refine:
+        fname = "ga4gh_with_refine.summary.json"
 
     print("Tool,TP,FP,FN,P,R,F1")
-    for f in glob.glob(os.path.join(indir, "*", "summary.json")):
+    for f in glob.glob(os.path.join(args.indir, "*", fname)):
         tool = f.split("/")[-2]
         tp, fp, fn = parse_summary(f)
         P = round(tp / (tp + fp) * 100, 1) if tp+fp > 0 else 0.0

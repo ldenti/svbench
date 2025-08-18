@@ -25,6 +25,9 @@ GIAB06_BED = config["giab06"]["bed"]
 TRUTHS = config["truths"]
 CALLERS = config["callers"]
 
+wildcard_constraints:
+    asmcaller="|".join([f"({c})" for c in TRUTHS])
+
 
 # callers from assembly
 include: "rules/callers-asm.smk"
@@ -45,43 +48,53 @@ include: "rules/giab.smk"
 
 # postprocessing
 truvari_options = {
-    "def": "--passonly --dup-to-ins",
-    "nosim": "--passonly --dup-to-ins -p 0",
-    "bed": "--passonly --dup-to-ins --includebed " + DIPBED,
-    "wbed": "--passonly --dup-to-ins --includebed ",
-    "easybed": "--passonly --dup-to-ins --includebed " + EASYBED,
-    "hardbed": "--passonly --dup-to-ins --includebed " + HARDBED,
-    "sev": "--passonly --typeignore --dup-to-ins -p 0 -s 30 -S 0",
+    "def": "--passonly --pick ac --dup-to-ins",
+    "wbed": "--passonly --pick ac --dup-to-ins --includebed ",
+    "easybed": "--passonly --pick ac --dup-to-ins --includebed " + EASYBED,
+    "hardbed": "--passonly --pick ac --dup-to-ins --includebed " + HARDBED,
+    # "sev": "--passonly --typeignore --dup-to-ins -p 0 -s 30 -S 0",
 }
 
-
 include: "rules/truvari.smk"
-include: "rules/minda.smk"
+# include: "rules/minda.smk"
 
 
 rule all:
     input:
         # from callers-asm.smk
         expand(pjoin(WD, "truths", "{truth}.vcf.gz"), truth=TRUTHS),
+        expand(pjoin(WD, "truths-confident", "{truth}.vcf.gz"), truth=TRUTHS),
         # from callers-asm-post.smk
         expand(pjoin(WD, "truths", "{truth}.haps-w500.paf"), truth=TRUTHS),
+        # expand(pjoin(WD, "truths-confident", "{truth}.haps-w500.paf"), truth=TRUTHS),
+        # FIXME: nexts are hardcoded
         expand(
-            pjoin(WD, "truths", "comparison-{mode}", "{truth2}-against-{truth1}"),
-            mode=["def", "bed"],
-            truth1=TRUTHS,
-            truth2=TRUTHS,
+            pjoin(WD, "truths", "comparison-{mode}", "svim-asm-against-dipcall"),
+            mode=["def", "wbed"],
+        ),
+        expand(
+            pjoin(WD, "truths", "comparison-{mode}", "hapdiff-against-dipcall"),
+            mode=["def", "wbed"],
+        ),
+        expand(
+            pjoin(WD, "truths", "comparison-{mode}", "hapdiff-against-svim-asm"),
+            mode=["def", "wbed"],
         ),
         # from truvari.smk
         expand(
-            pjoin(WD, "{truth}.truvari-{opt}.csv.png"),
+            pjoin(WD, "{truth}.truvari-{opt}.csv"),
             truth=TRUTHS,
-            opt=["def", "nosim", "bed", "easybed", "hardbed"],
+            opt=["def", "wbed", "easybed", "hardbed"],
         ),
         # from giab.smk
         pjoin(WD, "giab-v1.1-def.csv"),
         pjoin(WD, "giab-v1.1-wbed.csv"),
+        pjoin(WD, "giab-v1.1-def.refine.csv"),
+        pjoin(WD, "giab-v1.1-wbed.refine.csv"),
         pjoin(WD, "giab-v0.6-def.csv") if GIAB06 != "." else [],
         pjoin(WD, "giab-v0.6-wbed.csv") if GIAB06 != "." else [],
+        pjoin(WD, "giab-v0.6-def.refine.csv") if GIAB06 != "." else [],
+        pjoin(WD, "giab-v0.6-wbed.refine.csv") if GIAB06 != "." else [],
 
 
 rule copy_truth:

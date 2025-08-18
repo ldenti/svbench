@@ -1,0 +1,6 @@
+name: bedtools
+channels:
+  - bioconda
+dependencies:
+  - bedtools
+  - tabix

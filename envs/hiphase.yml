@@ -1,0 +1,6 @@
+name: hiphase
+channels:
+  - bioconda
+dependencies:
+  - hiphase=1.5.0
+  - bcftools

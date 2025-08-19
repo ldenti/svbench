@@ -66,7 +66,7 @@ rule all:
         expand(pjoin(WD, "truths-confident", "{truth}.vcf.gz"), truth=TRUTHS),
         # from callers-asm-post.smk
         expand(pjoin(WD, "truths", "{truth}.haps-w500.paf"), truth=TRUTHS),
-        # expand(pjoin(WD, "truths-confident", "{truth}.haps-w500.paf"), truth=TRUTHS),
+        expand(pjoin(WD, "truths-confident", "{truth}.haps-w500.paf"), truth=TRUTHS),
         # FIXME: nexts are hardcoded
         expand(
             pjoin(WD, "truths", "comparison-{mode}", "svim-asm-against-dipcall"),

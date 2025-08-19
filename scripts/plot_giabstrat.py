@@ -1,6 +1,7 @@
 import sys
 import os
 import glob
+import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -10,16 +11,18 @@ from matplotlib.patches import Patch
 
 sns.set(style="whitegrid")
 
-TOOLS = [
-    "cutesv-w4",
-    "debreak",
-    "sawfish",
-    "severus-w4",
-    "sniffles",
-    "svisionpro-w4",
-    "SVDSS-w4",
-    "SVDSS2ht-q0.98-w4",
-]
+TRUTHS = ["dipcall", "svim-asm", "hapdiff"]
+
+TOOLS = {
+    "cutesv-w4": "cuteSV",
+    "debreak": "debreak",
+    "sawfish": "sawfish",
+    "severus-w4": "severus",
+    "sniffles": "sniffles",
+    "svisionpro-w4": "SVision-pro",
+    "SVDSS-w4": "SVDSS",
+    "SVDSS2ht-q0.98-w4": "SVDSS2",
+}
 
 BENCHS = [
     "truvari-easybed",
@@ -27,22 +30,26 @@ BENCHS = [
 ]
 
 
-def parse_ddir(ddir, refseq=""):
+def parse_ddir(ddir, refine, refseq=""):
     data = []
     for csv_fp in glob.glob(f"{ddir}/*.csv"):
-        truth, bench, _ = csv_fp.split("/")[-1].split(".")
+        truth, bench, *rest = csv_fp.split("/")[-1].split(".")
+
+        if truth not in TRUTHS:
+            continue
+        if truth == "svim-asm":
+            truth = "SVIM-asm"
+
         if bench not in BENCHS:
             continue
-
         if "easy" in bench:
             bench = "Easy"
         else:
             bench = "Hard"
 
-        if truth == "severus-paper":
+        if refine and "refine" not in rest:
             continue
-        if truth == "svim-asm":
-            truth = "SVIM-asm"
+
         for line in open(csv_fp):
             if line.startswith("Tool"):
                 continue
@@ -50,29 +57,32 @@ def parse_ddir(ddir, refseq=""):
             tool = line[0]
             if tool not in TOOLS:
                 continue
-            if "-" in tool:
-                tool = tool.split("-")[0]
-            if tool == "SVDSS2ht":
-                tool = "SVDSS2"
+            tool = TOOLS[tool]
             f1 = float(line[-1])
             if f1 == 0:
                 continue
-            data.append([refseq, truth, bench, tool, f1])
+            data.append([refseq, truth, bench, refine, tool, f1])
     return data
 
 
 def main():
     sns.set(font_scale=0.8)
-    t2t_ddir = sys.argv[1]
-    hg38_ddir = sys.argv[2]
-    hg19_ddir = sys.argv[3]
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--refine", action="store_true")
+    parser.add_argument("t2t")
+    parser.add_argument("hg38")
+    parser.add_argument("hg19")
+    args = parser.parse_args()
 
     data = []
-    data += parse_ddir(t2t_ddir, "T2T")
-    data += parse_ddir(hg38_ddir, "GRCh38")
-    data += parse_ddir(hg19_ddir, "GRCh37")
+    data += parse_ddir(args.t2t, args.refine, "T2T")
+    data += parse_ddir(args.hg38, args.refine, "GRCh38")
+    data += parse_ddir(args.hg19, args.refine, "GRCh37")
 
-    df = pd.DataFrame(data, columns=["RefSeq", "Truth", "Bench", "Tool", "F1"])
+    df = pd.DataFrame(
+        data, columns=["RefSeq", "Truth", "Bench", "Refine", "Tool", "F1"]
+    )
     print(df)
 
     tools = df["Tool"].unique()

@@ -3,6 +3,7 @@ import os
 import argparse
 import glob
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -69,20 +70,26 @@ def main():
     sns.set(font_scale=0.75)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--bed", action='store_true')
+    parser.add_argument("--bed", action="store_true")
+    parser.add_argument("--refine", action="store_true")
     parser.add_argument("t2t")
     parser.add_argument("hg38")
     parser.add_argument("hg19")
-    parser.add_argument("hg19old")
     args = parser.parse_args()
+
+    mode = "wbed" if args.bed else "def"
+    refine = ".refine" if args.refine else ""
 
     fig, axes = plt.subplots(2, 4, figsize=(10, 5))
 
     # GIAB v0.6
     col = 0
     ref = "GRCh37"
-    data = parse_csv(args.hg19old, "GRCh37", TOOLS)
+    data = parse_csv(args.hg19 + f"giab-v0.6-{mode}{refine}.csv", "GRCh37", TOOLS)
     df = pd.DataFrame(data, columns=["Ref", "Tool", "P", "R", "F1", "rank"])
+
+    old_f1 = df.sort_values(["Tool"])[["Tool", "F1"]]
+
     sns.scatterplot(
         data=df[(df["Ref"] == ref) & (df["F1"] > 0)],
         x="P",
@@ -101,19 +108,32 @@ def main():
         ax=axes[1][col],
         hue="Tool",
     )
-    axes[0][col].set_title("(a)\n" + ref + " (GIAB v0.6" + (")" if not args.bed else ", Tier 1)"))
+    axes[0][col].set_title(
+        "(a)\n" + ref + " (GIAB v0.6" + (")" if not args.bed else ", Tier 1)")
+    )
     axes[1][col].set_ylim([0, 100])
     for i, container in enumerate(axes[1][col].containers):
         axes[1][col].bar_label(container, labels=df[df["Tool"] == x_order[i]]["rank"])
     axes[1][col].tick_params(axis="x", labelrotation=90)
 
     data = []
-    data += parse_csv(args.t2t, "T2T")
-    data += parse_csv(args.hg38, "GRCh38")
-    data += parse_csv(args.hg19, "GRCh37")
+    data += parse_csv(args.t2t + f"giab-v1.1-{mode}{refine}.csv", "T2T")
+    data += parse_csv(args.hg38 + f"giab-v1.1-{mode}{refine}.csv", "GRCh38")
+    data += parse_csv(args.hg19 + f"giab-v1.1-{mode}{refine}.csv", "GRCh37")
 
     df = pd.DataFrame(data, columns=["Ref", "Tool", "P", "R", "F1", "rank"])
     print(df)
+    df.sort_values(["Ref", "Tool"]).to_csv(
+        sys.stdout, columns=["Ref", "Tool", "P", "R", "F1"], index=False
+    )
+
+    new_f1 = df[df["Ref"] == "GRCh37"].sort_values(["Tool"])[["Tool", "F1"]]
+
+    print(old_f1)
+    print(new_f1)
+
+    corr = np.corrcoef(old_f1["F1"], new_f1["F1"])[0, 1]
+    print(corr)
 
     for col, ref in enumerate(["GRCh37", "GRCh38", "T2T"], 1):
         sns.scatterplot(
@@ -137,7 +157,12 @@ def main():
             # alpha=0.75,
         )
 
-        axes[0][col].set_title(f"({('abcd'[col])})\n" + ref + " (GIAB v1.1" + (")" if not args.bed else ", w/ BED)"))
+        axes[0][col].set_title(
+            f"({('abcd'[col])})\n"
+            + ref
+            + " (GIAB v1.1"
+            + (")" if not args.bed else ", w/ BED)")
+        )
         axes[1][col].set_ylim([0, 100])
 
         for i, container in enumerate(axes[1][col].containers):
@@ -152,8 +177,8 @@ def main():
             axes[0][col].set_ylabel("")
             axes[1][col].set_ylabel("")
 
-    xlim = 40 # 80 if args.bed else 40
-    ylim = 30 # 40 if args.bed else 30
+    xlim = 40  # 80 if args.bed else 40
+    ylim = 30  # 40 if args.bed else 30
     for col in range(4):
         axes[0][col].set_xlim([xlim, 100])
         axes[0][col].set_ylim([ylim, 100])

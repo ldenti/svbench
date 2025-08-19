@@ -1,5 +1,6 @@
 import sys
 import glob
+import argparse
 from pysam import VariantFile
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -12,11 +13,12 @@ REFSEQS = ["GRCh37", "GRCh38", "T2T"]
 TRUTHS = ["dipcall", "svim-asm", "hapdiff"]
 
 
-def parse_dir(ddir, refseq=""):
+def parse_dir(ddir, confident=False, refseq=""):
     # we may not need this dict and do everything on df but it's more convenient to me
     truths = {}
     data = []
-    for vcf_fn in glob.glob(f"{ddir}/truths/*.vcf.gz"):
+    conf = "-confident" if confident else ""
+    for vcf_fn in glob.glob(f"{ddir}/truths{conf}/*.vcf.gz"):
         if "noinfo" in vcf_fn:
             continue
         name = vcf_fn.split("/")[-1].split(".")[0]
@@ -53,9 +55,10 @@ def parse_dir(ddir, refseq=""):
     return data, truths
 
 
-def parse_pafs(ddir, refseq=""):
+def parse_pafs(ddir, confident=False, refseq=""):
     data = []
-    for paf_fn in glob.glob(f"{ddir}/truths/*.haps-w*.paf"):
+    conf = "-confident" if confident else ""
+    for paf_fn in glob.glob(f"{ddir}/truths{conf}/*.haps-w*.paf"):
         name = paf_fn.split("/")[-1].split(".")[0]
         if name not in TRUTHS:
             continue
@@ -69,180 +72,21 @@ def parse_pafs(ddir, refseq=""):
     return data
 
 
-def main_gt():
-    nb_dist = 50
-
-    fig, axes = plt.subplots(2, 3, figsize=(10, 5))
-    for i, vcf_dir in enumerate(sys.argv[1:4]):
-        # we may not need this dict and do everything on df but it's more convenient to me
-        df, truths = parse_dir(vcf_dir)
-        df = pd.DataFrame(
-            df, columns=["x", "Truth", "Chrom", "Pos", "Len", "Type", "GT"]
-        )
-
-        # GT distribution
-        gtdf = []
-        for truth in truths:
-            for b in [True, False]:
-                gt = "1/1" if b else "0/1"
-                gtdf.append(
-                    [truth, gt, len(df[(df["Truth"] == truth) & (df["GT"] == b)])]
-                )
-        gtdf = pd.DataFrame(gtdf, columns=["Truth", "GT", "Count"])
-
-        sns.barplot(
-            gtdf,
-            x="Truth",
-            order=TRUTHS,
-            y="Count",
-            hue="GT",
-            palette="Set2",
-            ax=axes[0][i],
-            legend=True if i == 2 else None,
-        )
-        axes[0][i].set_ylim(0, 31000)
-        axes[0][i].set_xlabel("")
-        axes[0][i].set_ylabel("")  # Count
-        if i == 0:
-            axes[0][i].set_ylabel("(a)")
-        # if i != 0:
-        #     # remove y-ticks
-        #     axes[0][i].set_yticklabels([])
-        if i == 2:
-            # move legends
-            sns.move_legend(axes[0][i], "center left", bbox_to_anchor=(1, 0.5))
-
-        # ax1.bar_label(ax1.containers[0])
-        # ax1.bar_label(ax1.containers[1])
-        axes[0][i].set_title(REFSEQS[i])
-
-        # neighbor distribution per truthset
-        df2 = []
-        for truth in truths:
-            neighbors = []
-            for chrom in truths[truth]:
-                last_p = truths[truth][chrom][0]
-                neighbors.append(0)
-                for p in truths[truth][chrom][1:]:
-                    if p - last_p > nb_dist:
-                        neighbors.append(0)
-                    else:
-                        neighbors[-1] += 1
-                    last_p = p
-            d = {}
-            for x in neighbors:
-                k = str(x)
-                if x >= 2:
-                    k = "2+"
-                d[k] = d[k] + 1 if k in d else 1
-            for k, v in d.items():
-                df2.append([truth, k, v])
-
-        df2 = pd.DataFrame(df2, columns=["Truth", f"#Neighbors-{nb_dist}bp", "Count"])
-        sns.barplot(
-            data=df2,
-            x=f"#Neighbors-{nb_dist}bp",
-            order=["0", "1", "2+"],
-            y="Count",
-            hue="Truth",
-            ax=axes[1][i],
-            legend=True if i == 2 else None,
-        )
-        axes[1][i].set_ylim(0, 35000)
-        axes[1][i].set_ylabel("")  # Count
-        if i == 0:
-            axes[1][i].set_ylabel("(b)")
-        if i == 2:
-            # move legends
-            sns.move_legend(axes[1][i], "center left", bbox_to_anchor=(1, 0.5))
-
-    plt.tight_layout()
-    plt.show()
-    # plt.savefig(vcf_dir + "/stats.png")
-
-
-def main_distr():
-    t2t_ddir = sys.argv[1]
-    hg38_ddir = sys.argv[2]
-    hg19_ddir = sys.argv[3]
-
-    df = []
-    df += parse_dir(t2t_ddir, "T2T")[0]
-    df += parse_dir(hg38_ddir, "GRCh38")[0]
-    df += parse_dir(hg19_ddir, "GRCh37")[0]
-
-    df = pd.DataFrame(
-        df, columns=["RefSeq", "Truth", "Chrom", "Pos", "Len", "Type", "GT"]
-    )
-
-    fig, axes = plt.subplots(2, 3, figsize=(10, 5))
-
-    for i, refseq in enumerate(REFSEQS):
-        subdf = df[df["RefSeq"] == refseq]
-        df2 = subdf.groupby(["Truth", "Type"]).count()
-        sns.barplot(
-            data=df2,
-            x="Truth",
-            order=TRUTHS,
-            y="Chrom",
-            hue="Type",
-            legend=True if i == 2 else None,
-            palette="Set2",
-            ax=axes[0][i],
-        )
-        axes[0][i].set_xlabel("")  # Truth
-        axes[0][i].set_ylim(0, 19000)  # Count
-        axes[0][i].set_ylabel("")  # Count
-        if i == 0:
-            axes[0][i].set_ylabel("(a)")
-        if i != 0:
-            # remove y-ticks
-            axes[0][i].set_yticklabels([])
-        if i == 2:
-            # move legends
-            sns.move_legend(axes[0][i], "center left", bbox_to_anchor=(1, 0.5))
-
-        # ax1.bar_label(ax1.containers[0])
-        # ax1.bar_label(ax1.containers[1])
-        axes[0][i].set_title(refseq)
-
-        # variant length distribution per truthset
-        sns.histplot(
-            data=subdf[abs(subdf["Len"]) <= 500],
-            x="Len",
-            hue="Truth",
-            element="poly",
-            fill=False,
-            legend=True if i == 2 else None,
-            ax=axes[1][i],
-        )
-        axes[1][i].set_xlabel("Length")
-        axes[1][i].set_ylabel("")  # Count
-        axes[1][i].set_ylim(0, 2000)
-        if i == 0:
-            axes[1][i].set_ylabel("(b)")
-        if i != 0:
-            # remove y-ticks
-            axes[1][i].set_yticklabels([])
-        if i == 2:
-            sns.move_legend(axes[1][i], "center left", bbox_to_anchor=(1, 0.5))
-
-    plt.tight_layout()
-    plt.show()
-
-
 def main():
-    t2t_ddir = sys.argv[1]
-    hg38_ddir = sys.argv[2]
-    hg19_ddir = sys.argv[3]
-    nb_dist = 500
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--confident", action="store_true")
+    parser.add_argument("--dist", default=500)
+    parser.add_argument("t2t")
+    parser.add_argument("hg38")
+    parser.add_argument("hg19")
+    args = parser.parse_args()
 
     df = []
-    d, t2t_truth = parse_dir(t2t_ddir, "T2T")
+    d, t2t_truth = parse_dir(args.t2t, args.confident, "T2T")
     df += d
-    d, hg38_truth = parse_dir(hg38_ddir, "GRCh38")
+    d, hg38_truth = parse_dir(args.hg38, args.confident, "GRCh38")
     df += d
-    d, hg19_truth = parse_dir(hg19_ddir, "GRCh37")
+    d, hg19_truth = parse_dir(args.hg19, args.confident, "GRCh37")
     df += d
 
     df = pd.DataFrame(
@@ -314,7 +158,7 @@ def main():
                 last_p = truths[truth][chrom][0]
                 neighbors.append(0)
                 for p in truths[truth][chrom][1:]:
-                    if p - last_p > nb_dist:
+                    if p - last_p > args.dist:
                         neighbors.append(0)
                     else:
                         neighbors[-1] += 1
@@ -328,10 +172,10 @@ def main():
             for k, v in d.items():
                 df2.append([truth, k, v])
 
-        df2 = pd.DataFrame(df2, columns=["Truth", f"#Neighbors-{nb_dist}bp", "Count"])
+        df2 = pd.DataFrame(df2, columns=["Truth", f"#Neighbors-{args.dist}bp", "Count"])
         sns.barplot(
             data=df2,
-            x=f"#Neighbors-{nb_dist}bp",
+            x=f"#Neighbors-{args.dist}bp",
             order=["0", "1", "2+"],
             y="Count",
             hue="Truth",
@@ -349,9 +193,9 @@ def main():
 
     # --- NM ttmars-like
     df = []
-    df += parse_pafs(t2t_ddir, "T2T")
-    df += parse_pafs(hg38_ddir, "GRCh38")
-    df += parse_pafs(hg19_ddir, "GRCh37")
+    df += parse_pafs(args.t2t, args.confident, "T2T")
+    df += parse_pafs(args.hg38, args.confident, "GRCh38")
+    df += parse_pafs(args.hg19, args.confident, "GRCh37")
 
     df = pd.DataFrame(df, columns=["RefSeq", "Truth", "NM", "de"])
 
@@ -395,10 +239,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # mode = sys.argv.pop(1)
-    # if mode == "distr":
-    #     main_distr()
-    # elif mode == "gt":
-    #     main_gt()
-    # else:
     main()

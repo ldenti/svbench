@@ -7,6 +7,8 @@ import seaborn as sns
 
 sns.set(style="whitegrid")
 
+TRUTHS = ["dipcall", "svim-asm", "hapdiff"]
+
 TOOLS = {
     "cutesv-w4": "cuteSV",
     "debreak": "debreak",
@@ -20,9 +22,7 @@ TOOLS = {
 
 BENCHS = [
     "truvari-def",
-    "truvari-bed",
-    "truvari-nosim",
-    # "truvari-sev",
+    "truvari-wbed",
 ]
 
 # BENCHS = [
@@ -35,13 +35,14 @@ BENCHS = [
 def parse_ddir(ddir, refseq=""):
     data = []
     for csv_fp in glob.glob(f"{ddir}/*.csv"):
-        truth, bench, _ = csv_fp.split("/")[-1].split(".")
-        if truth == "severus-paper":
-            continue  # truth = "hapdiff"
-        if truth == "giab-v11":
+        truth, bench, *rest = csv_fp.split("/")[-1].split(".")
+        if truth not in TRUTHS:
             continue
         if truth == "svim-asm":
             truth = "SVIM-asm"
+        refine = False
+        if "refine" in rest:
+            refine = True
         for line in open(csv_fp):
             if line.startswith("Tool"):
                 continue
@@ -55,7 +56,7 @@ def parse_ddir(ddir, refseq=""):
             f1 = float(line[-1])
             if f1 == 0:
                 continue
-            data.append([refseq, truth, bench, tool, f1])
+            data.append([refseq, truth, bench, refine, tool, f1])
     return data
 
 
@@ -63,43 +64,51 @@ def main_rankmap():
     CMAP = "Purples_r"
 
     ddir = sys.argv[1]
-    refseq = sys.argv[2]
+    refseq = sys.argv[2]  # plot title
 
     data = parse_ddir(ddir, refseq)
-    df = pd.DataFrame(data, columns=["RefSeq", "Truth", "Bench", "Tool", "F1"])
+    df = pd.DataFrame(
+        data, columns=["RefSeq", "Truth", "Bench", "Refine", "Tool", "F1"]
+    )
+    print(df)
 
-    truths = list(df["Truth"].unique())
-    truths.sort()
+    # truths = list(df["Truth"].unique())
+    # truths.sort()
     truths = ["dipcall", "SVIM-asm", "hapdiff"]
     tools = list(df["Tool"].unique())
     tools.sort()
     # force svision-pro to be the last one
-    tools = tools[:2] + tools[3:] + [tools[2]]
+    # tools = tools[:2] + tools[3:] + [tools[2]]
 
-    fig, axes = plt.subplots(1, 3)
-    for i, bench in enumerate(BENCHS):
-        M = [[len(tools) for _ in truths] for _ in tools]
-        M_annot = [["-" for _ in truths] for _ in tools]
-        for col, truth in enumerate(truths):
-            df2 = df[(df["Bench"] == bench) & (df["Truth"] == truth)]
-            print(df2)
-            f1s = [(tool, f1) for tool, f1 in zip(df2["Tool"], df2["F1"])]
-            f1s.sort(key=lambda x: x[1], reverse=True)
-            print(f1s)
-            for rank, (tool, _) in enumerate(f1s, 1):
-                M[tools.index(tool)][col] = rank
-                M_annot[tools.index(tool)][col] = str(rank)
-        sns.heatmap(
-            M,
-            ax=axes[i],
-            annot=M_annot,
-            fmt="",
-            xticklabels=truths,
-            yticklabels=tools if i == 0 else False,
-            cbar=False,
-            cmap=CMAP,
-        )
-        axes[i].set_title(bench)
+    fig, axes = plt.subplots(2, 2, figsize=(5, 7))
+    for col, bench in enumerate(BENCHS):
+        for row, refine in enumerate([False, True]):
+            M = [[len(tools) for _ in truths] for _ in tools]
+            M_annot = [["-" for _ in truths] for _ in tools]
+            for hm_col, truth in enumerate(truths):
+                df2 = df[
+                    (df["Bench"] == bench)
+                    & (df["Truth"] == truth)
+                    & (df["Refine"] == refine)
+                ]
+                print(df2)
+                f1s = [(tool, f1) for tool, f1 in zip(df2["Tool"], df2["F1"])]
+                f1s.sort(key=lambda x: x[1], reverse=True)
+                print(f1s)
+                for rank, (tool, _) in enumerate(f1s, 1):
+                    M[tools.index(tool)][hm_col] = rank
+                    M_annot[tools.index(tool)][hm_col] = str(rank)
+            sns.heatmap(
+                M,
+                ax=axes[row][col],
+                annot=M_annot,
+                fmt="",
+                xticklabels=truths if row == 1 else False,
+                yticklabels=tools if col == 0 else False,
+                cbar=False,
+                cmap=CMAP,
+            )
+            axes[row][col].set_title(bench + (" (refine)" if refine else ""))
 
     plt.suptitle(refseq)
     plt.tight_layout()
@@ -117,7 +126,9 @@ def main_matrix():
     data += parse_ddir(hg38_ddir, "GRCh38")
     data += parse_ddir(hg19_ddir, "GRCh37")
 
-    df = pd.DataFrame(data, columns=["RefSeq", "Truth", "Bench", "Tool", "F1"])
+    df = pd.DataFrame(
+        data, columns=["RefSeq", "Truth", "Bench", "Refine", "Tool", "F1"]
+    )
     print(df)
 
     tools = df["Tool"].unique()
@@ -205,40 +216,37 @@ def main_matrix():
     plt.show()
 
 
-def main_bar():
-    sns.set(font_scale=0.75)
-    csv_fn = sys.argv[1]
-    df = pd.read_csv(csv_fn)
-    df = df.sort_values(by=["Tool"], ascending=True)
+# def main_bar():
+#     sns.set(font_scale=0.75)
+#     csv_fn = sys.argv[1]
+#     df = pd.read_csv(csv_fn)
+#     df = df.sort_values(by=["Tool"], ascending=True)
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 5))
-    sns.scatterplot(data=df, x="P", y="R", hue="Tool", ax=ax1, legend=None)
+#     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 5))
+#     sns.scatterplot(data=df, x="P", y="R", hue="Tool", ax=ax1, legend=None)
 
-    for index, row in df.iterrows():
-        if row["P"] >= 50 and row["R"] >= 50:
-            ax1.text(row["P"] + 0.2, row["R"] + 0.2, row["Tool"])
-    ax1.set_xlim(50, 100)
-    ax1.set_ylim(50, 100)
+#     for index, row in df.iterrows():
+#         if row["P"] >= 50 and row["R"] >= 50:
+#             ax1.text(row["P"] + 0.2, row["R"] + 0.2, row["Tool"])
+#     ax1.set_xlim(50, 100)
+#     ax1.set_ylim(50, 100)
 
-    sns.barplot(data=df, x="Tool", y="F1", ax=ax2, color="steelblue", alpha=0.75)
-    ax2.tick_params(axis="x", labelrotation=90)
-    ax2.bar_label(ax2.containers[0])
-    ax2.set_ylim(50, 100)
-    plt.tight_layout()
-    # plt.show()
-    plt.savefig(csv_fn + ".png", dpi=300)
+#     sns.barplot(data=df, x="Tool", y="F1", ax=ax2, color="steelblue", alpha=0.75)
+#     ax2.tick_params(axis="x", labelrotation=90)
+#     ax2.bar_label(ax2.containers[0])
+#     ax2.set_ylim(50, 100)
+#     plt.tight_layout()
+#     # plt.show()
+#     plt.savefig(csv_fn + ".png", dpi=300)
 
 
 if __name__ == "__main__":
-    if sys.argv[1] == "all1":
-        sys.argv.pop(0)
-        main_matrix1()
-    elif sys.argv[1] == "all":
+    if sys.argv[1] == "all":
         sys.argv.pop(0)
         main_matrix()
     elif sys.argv[1] == "rank":
         sys.argv.pop(0)
         main_rankmap()
-    elif sys.argv[1] == "single":
-        sys.argv.pop(0)
-        main_bar()
+    # elif sys.argv[1] == "single":
+    #     sys.argv.pop(0)
+    #     main_bar()

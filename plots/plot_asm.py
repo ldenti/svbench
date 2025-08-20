@@ -234,8 +234,8 @@ def main():
         #     # move legends
         #     sns.move_legend(axes[3][i], "center left", bbox_to_anchor=(1, 0.5))
     plt.tight_layout()
-    plt.show()
-    # plt.savefig("x.pdf")
+    # plt.show()
+    plt.savefig("x.pdf")
 
 
 if __name__ == "__main__":

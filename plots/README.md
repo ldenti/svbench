@@ -8,10 +8,10 @@ We ran the Snakemake pipeline three times, one per reference genome (i.e., hg19,
 The folder `truth` in the snakemake output directory contains the assembly-based truth sets. They can be analyzed using the following commands:
 ``` sh
 # Figure on assembly-based callsets
-python3 ./plot_asm.py $t2t_smk_wd $hg38_smk_wd $hg19_smk_wd
+python3 ./plot_asm.py [--confident] $t2t_smk_wd $hg38_smk_wd $hg19_smk_wd
 
 # Three genomes heatmap (jaccard similarity/accuracy)
-python3 ./plot_comparison_asm.py $t2t_smk_wd $hg38_smk_wd $hg19_smk_wd
+python3 ./plot_comparison_asm.py [--refine] $t2t_smk_wd $hg38_smk_wd $hg19_smk_wd
 ```
 
 #### Read-based vs assembly-based
@@ -22,13 +22,12 @@ python3 ./plot_truvari.py all $t2t_smk_wd $hg38_smk_wd $hg19_smk_wd
 python3 ./plot_truvari.py rank $t2t_smk_wd T2T
 
 # F1 results on GIAB stratification
-python3 ./plot_giabstrat.py $t2t_smk_wd $hg38_smk_wd $hg19_smk_wd
+python3 ./plot_giabstrat.py [--refine] $t2t_smk_wd $hg38_smk_wd $hg19_smk_wd
 ```
 
 #### Evaluation against GIAB (v1.1 and v0.6)
 ``` sh
-python3 ./plot_giab.py $t2t_smk_wd/giab-v1.1-def.csv $hg38_smk_wd/giab-v1.1-def.csv $hg19_smk_wd/giab-v1.1-def.csv $hg19_smk_wd/giab-v0.6-def.csv
-# python3 ./plot_giab.py $t2t_smk_wd/giab-v1.1-bed.csv $hg38_smk_wd/giab-v1.1-bed.csv $hg19_smk_wd/giab-v1.1-bed.csv $hg19_smk_wd/giab-v0.6-bed.csv
+python3 ./plot_giab.py [--refine] [--bed] $t2t_smk_wd $hg38_smk_wd $hg19_smk_wd
 ```
 
 <!--

@@ -53,10 +53,12 @@ def parse_ddir(ddir, refseq=""):
             if bench not in BENCHS:
                 continue
             tool = TOOLS[tool]
-            f1 = float(line[-1])
+            p = round(float(line[-3]), 2)
+            r = round(float(line[-2]), 2)
+            f1 = round(float(line[-1]), 2)
             if f1 == 0:
                 continue
-            data.append([refseq, truth, bench, refine, tool, f1])
+            data.append([refseq, truth, bench, refine, tool, p, r, f1])
     return data
 
 
@@ -127,9 +129,26 @@ def main_matrix():
     data += parse_ddir(hg19_ddir, "GRCh37")
 
     df = pd.DataFrame(
-        data, columns=["RefSeq", "Truth", "Bench", "Refine", "Tool", "F1"]
+        data, columns=["RefSeq", "Truth", "Bench", "Refine", "Tool", "P", "R", "F1"]
     )
     print(df)
+
+    df_latex = []
+    for refseq in ["T2T", "GRCh38", "GRCh37"]:
+        for truth in ["dipcall", "SVIM-asm", "hapdiff"]:
+            for tool in sorted(df["Tool"].unique()):
+                row = [refseq, truth, tool]
+                for bench in BENCHS:
+                    for refine in [False, True]:
+                        # print(refseq, truth, bench, refine, tool)
+                        df_row = df[(df["RefSeq"] == refseq) & (df["Truth"] == truth) & (df["Bench"] == bench) & (df["Refine"] == refine) & (df["Tool"] == tool)]
+                        row.append(float(df_row["P"].iloc[0]))
+                        row.append(float(df_row["R"].iloc[0]))
+                        row.append(float(df_row["F1"].iloc[0]))
+                df_latex.append(row)
+    # first three: full genome (no refine), full genome (refine), confident regions (no refine), confident regions (refine)
+    df_latex = pd.DataFrame(df_latex, columns = ["RefSeq", "Truth", "Caller", "P", "R", "F1", "P", "R", "F1", "P", "R", "F1", "P", "R", "F1"])
+    df_latex.to_latex(sys.stdout, index=False)
 
     tools = df["Tool"].unique()
     tools.sort()

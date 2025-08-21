@@ -110,7 +110,7 @@ def main():
         )
         axes[0][i].set_xlabel("")  # Truth
         axes[0][i].tick_params(axis="x", labelrotation=0)
-        axes[0][i].set_ylim(0, 19000)  # Count
+        axes[0][i].set_ylim(0, 35000)  # Count
         axes[0][i].set_ylabel("")  # Count
         if i == 0:
             axes[0][i].set_ylabel("(a)\nCount")
@@ -234,8 +234,8 @@ def main():
         #     # move legends
         #     sns.move_legend(axes[3][i], "center left", bbox_to_anchor=(1, 0.5))
     plt.tight_layout()
-    # plt.show()
-    plt.savefig("x.pdf")
+    plt.show()
+    # plt.savefig("x.pdf")
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ import seaborn as sns
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
-sns.set(style="whitegrid")
+# sns.set_theme(style="whitegrid")
 
 TRUTHS = ["dipcall", "svim-asm", "hapdiff"]
 
@@ -47,7 +47,8 @@ def parse_ddir(ddir, refine, refseq=""):
         else:
             bench = "Hard"
 
-        if refine and "refine" not in rest:
+        is_refined = "refine" in rest
+        if refine != is_refined:
             continue
 
         for line in open(csv_fp):
@@ -58,15 +59,17 @@ def parse_ddir(ddir, refine, refseq=""):
             if tool not in TOOLS:
                 continue
             tool = TOOLS[tool]
+            p = float(line[-3])
+            r = float(line[-2])
             f1 = float(line[-1])
             if f1 == 0:
                 continue
-            data.append([refseq, truth, bench, refine, tool, f1])
+            data.append([refseq, truth, bench, refine, tool, p, r, f1])
     return data
 
 
 def main():
-    sns.set(font_scale=0.8)
+    sns.set_theme(font_scale=0.8)
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--refine", action="store_true")
@@ -81,9 +84,27 @@ def main():
     data += parse_ddir(args.hg19, args.refine, "GRCh37")
 
     df = pd.DataFrame(
-        data, columns=["RefSeq", "Truth", "Bench", "Refine", "Tool", "F1"]
+        data, columns=["RefSeq", "Truth", "Bench", "Refine", "Tool", "P", "R", "F1"]
     )
-    print(df)
+    df.sort_values(by=["RefSeq", "Truth", "Bench", "Tool"])
+    df.to_csv(sys.stdout, index=False)
+
+    # avg f1
+    # for refseq in df["RefSeq"].unique():
+    for truth in df["Truth"].unique():
+        for bench in df["Bench"].unique():
+            avg_f1 = df[(df["Bench"] == bench) & (df["Truth"] == truth)]["F1"].mean()
+            print(bench, truth, "ref" if args.refine else "noref", avg_f1, sep="\t")
+    print("---")
+    for refseq in df["RefSeq"].unique():
+        for bench in df["Bench"].unique():
+            avg_f1 = df[(df["Bench"] == bench) & (df["RefSeq"] == refseq)]["F1"].mean()
+            print(refseq, bench, "ref" if args.refine else "noref", avg_f1, sep="\t")
+    print("---")
+    print(
+        "Max F1 on hard regions of T2T:",
+        df[(df["RefSeq"] == "T2T") & (df["Bench"] == "Hard")]["F1"].max(),
+    )
 
     tools = df["Tool"].unique()
     tools.sort()
@@ -110,7 +131,7 @@ def main():
                         & (df["Bench"] == bench)
                         & (df["Tool"] == tool)
                     ]["F1"].iloc[0]
-                    print(tool, x, truth, offset, bench, f1)
+                    # print(tool, x, truth, offset, bench, f1)
 
                     x1 = x + offset
                     if offset == 0:

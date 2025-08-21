@@ -85,8 +85,12 @@ def main():
     # GIAB v0.6
     col = 0
     ref = "GRCh37"
-    data = parse_csv(args.hg19 + f"giab-v0.6-{mode}{refine}.csv", "GRCh37", TOOLS)
+    data = parse_csv(args.hg19 + f"/giab-v0.6-{mode}{refine}.csv", "GRCh37", TOOLS)
     df = pd.DataFrame(data, columns=["Ref", "Tool", "P", "R", "F1", "rank"])
+    # print(df)
+    df.sort_values(["Ref", "Tool"]).to_csv(
+        sys.stdout, columns=["Ref", "Tool", "P", "R", "F1"], index=False
+    )
 
     old_f1 = df.sort_values(["Tool"])[["Tool", "F1"]]
 
@@ -117,12 +121,12 @@ def main():
     axes[1][col].tick_params(axis="x", labelrotation=90)
 
     data = []
-    data += parse_csv(args.t2t + f"giab-v1.1-{mode}{refine}.csv", "T2T")
-    data += parse_csv(args.hg38 + f"giab-v1.1-{mode}{refine}.csv", "GRCh38")
-    data += parse_csv(args.hg19 + f"giab-v1.1-{mode}{refine}.csv", "GRCh37")
+    data += parse_csv(args.t2t + f"/giab-v1.1-{mode}{refine}.csv", "T2T")
+    data += parse_csv(args.hg38 + f"/giab-v1.1-{mode}{refine}.csv", "GRCh38")
+    data += parse_csv(args.hg19 + f"/giab-v1.1-{mode}{refine}.csv", "GRCh37")
 
     df = pd.DataFrame(data, columns=["Ref", "Tool", "P", "R", "F1", "rank"])
-    print(df)
+    # print(df)
     df.sort_values(["Ref", "Tool"]).to_csv(
         sys.stdout, columns=["Ref", "Tool", "P", "R", "F1"], index=False
     )

@@ -70,7 +70,7 @@ def main_rankmap():
 
     data = parse_ddir(ddir, refseq)
     df = pd.DataFrame(
-        data, columns=["RefSeq", "Truth", "Bench", "Refine", "Tool", "F1"]
+        data, columns=["RefSeq", "Truth", "Bench", "Refine", "Tool", "P", "R", "F1"]
     )
     print(df)
 
@@ -100,7 +100,7 @@ def main_rankmap():
                 for rank, (tool, _) in enumerate(f1s, 1):
                     M[tools.index(tool)][hm_col] = rank
                     M_annot[tools.index(tool)][hm_col] = str(rank)
-            sns.heatmap(
+            g = sns.heatmap(
                 M,
                 ax=axes[row][col],
                 annot=M_annot,
@@ -110,6 +110,7 @@ def main_rankmap():
                 cbar=False,
                 cmap=CMAP,
             )
+            g.set_xticklabels(g.get_xticklabels(), rotation=30)
             axes[row][col].set_title(bench + (" (refine)" if refine else ""))
 
     plt.suptitle(refseq)
@@ -132,23 +133,36 @@ def main_matrix():
         data, columns=["RefSeq", "Truth", "Bench", "Refine", "Tool", "P", "R", "F1"]
     )
     print(df)
+    df.sort_values(by=["RefSeq", "Truth", "Bench", "Refine", "Tool"])
+    df.to_csv(sys.stdout, index=False)
 
-    df_latex = []
+    # df_latex = []
+    # for refseq in ["T2T", "GRCh38", "GRCh37"]:
+    #     for truth in ["dipcall", "SVIM-asm", "hapdiff"]:
+    #         for tool in sorted(df["Tool"].unique()):
+    #             row = [refseq, truth, tool]
+    #             for bench in BENCHS:
+    #                 for refine in [False, True]:
+    #                     df_row = df[(df["RefSeq"] == refseq) & (df["Truth"] == truth) & (df["Bench"] == bench) & (df["Refine"] == refine) & (df["Tool"] == tool)]
+    #                     row.append(float(df_row["P"].iloc[0]))
+    #                     row.append(float(df_row["R"].iloc[0]))
+    #                     row.append(float(df_row["F1"].iloc[0]))
+    #             df_latex.append(row)
+    # # first three: full genome (no refine), full genome (refine), confident regions (no refine), confident regions (refine)
+    # df_latex = pd.DataFrame(df_latex, columns = ["RefSeq", "Truth", "Caller", "P", "R", "F1", "P", "R", "F1", "P", "R", "F1", "P", "R", "F1"])
+    # # df_latex.to_latex(sys.stdout, index=False)
+    # df_latex.to_csv(sys.stdout, index=False)
+
+    # avg f1
     for refseq in ["T2T", "GRCh38", "GRCh37"]:
-        for truth in ["dipcall", "SVIM-asm", "hapdiff"]:
-            for tool in sorted(df["Tool"].unique()):
-                row = [refseq, truth, tool]
-                for bench in BENCHS:
-                    for refine in [False, True]:
-                        # print(refseq, truth, bench, refine, tool)
-                        df_row = df[(df["RefSeq"] == refseq) & (df["Truth"] == truth) & (df["Bench"] == bench) & (df["Refine"] == refine) & (df["Tool"] == tool)]
-                        row.append(float(df_row["P"].iloc[0]))
-                        row.append(float(df_row["R"].iloc[0]))
-                        row.append(float(df_row["F1"].iloc[0]))
-                df_latex.append(row)
-    # first three: full genome (no refine), full genome (refine), confident regions (no refine), confident regions (refine)
-    df_latex = pd.DataFrame(df_latex, columns = ["RefSeq", "Truth", "Caller", "P", "R", "F1", "P", "R", "F1", "P", "R", "F1", "P", "R", "F1"])
-    df_latex.to_latex(sys.stdout, index=False)
+        for bench in BENCHS:
+            for refine in [False, True]:
+                avg_f1 = df[
+                    (df["RefSeq"] == refseq)
+                    & (df["Bench"] == bench)
+                    & (df["Refine"] == refine)
+                ]["F1"].mean()
+                print(refseq, bench, "ref" if refine else "noref", avg_f1, sep="\t")
 
     tools = df["Tool"].unique()
     tools.sort()

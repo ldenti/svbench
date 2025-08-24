@@ -50,7 +50,8 @@ def parse_csv(csv_fp):
             continue
         data.append([tool, f1])
     return data
-            
+
+
 def parse_ddir(ddir, refseq=""):
 
     return data
@@ -81,7 +82,9 @@ def main():
             continue  # truth = "hapdiff"
         if bench not in BENCHS:
             continue
-        data += [[refseq, truth + ".giab", bench, tool, f1] for tool, f1 in parse_csv(csv_fp)]
+        data += [
+            [refseq, truth + ".giab", bench, tool, f1] for tool, f1 in parse_csv(csv_fp)
+        ]
 
     df = pd.DataFrame(data, columns=["RefSeq", "Truth", "Bench", "Tool", "F1"])
     print(df.to_string())

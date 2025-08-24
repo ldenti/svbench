@@ -21,7 +21,7 @@ TOOLS = {
     "sniffles": "sniffles",
     "svisionpro-w4": "SVision-pro",
     "SVDSS-w4": "SVDSS",
-    "SVDSS2ht-q0.98-w4": "SVDSS2",
+    # "SVDSS2ht-q0.98-w4": "SVDSS2",
 }
 
 BENCHS = [
@@ -30,7 +30,7 @@ BENCHS = [
 ]
 
 
-def parse_ddir(ddir, refine, refseq=""):
+def parse_ddir(ddir, refseq=""):
     data = []
     for csv_fp in glob.glob(f"{ddir}/*.csv"):
         truth, bench, *rest = csv_fp.split("/")[-1].split(".")
@@ -48,8 +48,6 @@ def parse_ddir(ddir, refine, refseq=""):
             bench = "Hard"
 
         is_refined = "refine" in rest
-        if refine != is_refined:
-            continue
 
         for line in open(csv_fp):
             if line.startswith("Tool"):
@@ -64,7 +62,7 @@ def parse_ddir(ddir, refine, refseq=""):
             f1 = float(line[-1])
             if f1 == 0:
                 continue
-            data.append([refseq, truth, bench, refine, tool, p, r, f1])
+            data.append([refseq, truth, bench, is_refined, tool, p, r, f1])
     return data
 
 
@@ -79,36 +77,89 @@ def main():
     args = parser.parse_args()
 
     data = []
-    data += parse_ddir(args.t2t, args.refine, "T2T")
-    data += parse_ddir(args.hg38, args.refine, "GRCh38")
-    data += parse_ddir(args.hg19, args.refine, "GRCh37")
+    data += parse_ddir(args.t2t, "T2T")
+    data += parse_ddir(args.hg38, "GRCh38")
+    data += parse_ddir(args.hg19, "GRCh37")
 
     df = pd.DataFrame(
         data, columns=["RefSeq", "Truth", "Bench", "Refine", "Tool", "P", "R", "F1"]
     )
+
+    # Supplementary Table 3 (full table)
     df.sort_values(by=["RefSeq", "Truth", "Bench", "Tool"])
     df.to_csv(sys.stdout, index=False)
 
-    # avg f1
-    # for refseq in df["RefSeq"].unique():
+    # Supplementary Table 4 (delta(refine,norefine)
+    print(
+        "RefSeq", "Truth", "Bench", "Tool", "F1-refine", "F1-norefine", "delta", sep=","
+    )
+    for refseq in df["RefSeq"].unique():
+        for truth in df["Truth"].unique():
+            for bench in df["Bench"].unique():
+                for tool in df["Tool"].unique():
+                    avg_f1_refine = df[
+                        (df["RefSeq"] == refseq)
+                        & (df["Truth"] == truth)
+                        & (df["Bench"] == bench)
+                        & (df["Tool"] == tool)
+                        & (df["Refine"] == True)
+                    ]["F1"].iloc[0]
+                    avg_f1_norefine = df[
+                        (df["RefSeq"] == refseq)
+                        & (df["Truth"] == truth)
+                        & (df["Bench"] == bench)
+                        & (df["Tool"] == tool)
+                        & (df["Refine"] == False)
+                    ]["F1"].iloc[0]
+                    print(
+                        refseq,
+                        truth,
+                        bench,
+                        tool,
+                        avg_f1_refine,
+                        avg_f1_norefine,
+                        round(avg_f1_refine - avg_f1_norefine, 2),
+                        sep=",",
+                    )
+
+    # Numbers for manuscript: avg f1
     for truth in df["Truth"].unique():
         for bench in df["Bench"].unique():
-            avg_f1 = df[(df["Bench"] == bench) & (df["Truth"] == truth)]["F1"].mean()
-            print(bench, truth, "ref" if args.refine else "noref", avg_f1, sep="\t")
+            for refine in df["Refine"].unique():
+                avg_f1 = df[
+                    (df["Bench"] == bench)
+                    & (df["Truth"] == truth)
+                    & (df["Refine"] == refine)
+                ]["F1"].mean()
+                print(bench, truth, "ref" if refine else "noref", avg_f1, sep="\t")
     print("---")
     for refseq in df["RefSeq"].unique():
         for bench in df["Bench"].unique():
-            avg_f1 = df[(df["Bench"] == bench) & (df["RefSeq"] == refseq)]["F1"].mean()
-            print(refseq, bench, "ref" if args.refine else "noref", avg_f1, sep="\t")
+            for refine in df["Refine"].unique():
+                avg_f1 = df[
+                    (df["Bench"] == bench)
+                    & (df["RefSeq"] == refseq)
+                    & (df["Refine"] == refine)
+                ]["F1"].mean()
+                print(refseq, bench, "ref" if refine else "noref", avg_f1, sep="\t")
     print("---")
     print(
-        "Max F1 on hard regions of T2T:",
-        df[(df["RefSeq"] == "T2T") & (df["Bench"] == "Hard")]["F1"].max(),
+        "Max F1 on hard regions of T2T (refine):",
+        df[(df["RefSeq"] == "T2T") & (df["Bench"] == "Hard") & (df["Refine"] == True)][
+            "F1"
+        ].max(),
     )
-
+    print(
+        "Max F1 on hard regions of T2T (non refine):",
+        df[(df["RefSeq"] == "T2T") & (df["Bench"] == "Hard") & (df["Refine"] == False)][
+            "F1"
+        ].max(),
+    )
     tools = df["Tool"].unique()
     tools.sort()
     xticks = {tool: i for i, tool in enumerate(tools, 1)}
+
+    df = df[df["Refine"] == args.refine]
 
     xoff = 0.25
     x_offsets = {"dipcall": (-xoff, "r"), "SVIM-asm": (0, "g"), "hapdiff": (xoff, "b")}

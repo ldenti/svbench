@@ -17,13 +17,13 @@ TOOLS = {
     "sniffles": "sniffles",
     "svisionpro-w4": "SVision-pro",
     "SVDSS-w4": "SVDSS",
-    "SVDSS2ht-q0.98-w4": "SVDSS2",
+    # "SVDSS2ht-q0.98-w4": "SVDSS2",
 }
 
-BENCHS = [
-    "truvari-def",
-    "truvari-wbed",
-]
+BENCHS = {
+    "truvari-def": "Full",
+    "truvari-wbed": "Conf",
+}
 
 # BENCHS = [
 #     "truvari-def",
@@ -40,6 +40,9 @@ def parse_ddir(ddir, refseq=""):
             continue
         if truth == "svim-asm":
             truth = "SVIM-asm"
+        if bench not in BENCHS:
+            continue
+        bench = BENCHS[bench]
         refine = False
         if "refine" in rest:
             refine = True
@@ -49,8 +52,6 @@ def parse_ddir(ddir, refseq=""):
             line = line.strip("\n").split(",")
             tool = line[0]
             if tool not in TOOLS:
-                continue
-            if bench not in BENCHS:
                 continue
             tool = TOOLS[tool]
             p = round(float(line[-3]), 2)
@@ -79,11 +80,9 @@ def main_rankmap():
     truths = ["dipcall", "SVIM-asm", "hapdiff"]
     tools = list(df["Tool"].unique())
     tools.sort()
-    # force svision-pro to be the last one
-    # tools = tools[:2] + tools[3:] + [tools[2]]
 
     fig, axes = plt.subplots(2, 2, figsize=(5, 7))
-    for col, bench in enumerate(BENCHS):
+    for col, bench in enumerate(["Full", "Conf"]):  # HARDCODED
         for row, refine in enumerate([False, True]):
             M = [[len(tools) for _ in truths] for _ in tools]
             M_annot = [["-" for _ in truths] for _ in tools]
@@ -111,52 +110,42 @@ def main_rankmap():
                 cmap=CMAP,
             )
             g.set_xticklabels(g.get_xticklabels(), rotation=30)
-            axes[row][col].set_title(bench + (" (refine)" if refine else ""))
+            if col == 0:
+                g.set_ylabel("w/" + ("" if refine else "o") + " refine")
+            else:
+                g.set_ylabel("")
+            if row == 0:
+                title = "Full genome" if bench == "Full" else "Confident regions"
+                axes[row][col].set_title(title)
 
     plt.suptitle(refseq)
     plt.tight_layout()
     plt.show()
 
 
-def main_matrix():
+def main_all():
     # sns.set(font_scale=0.7)
     t2t_ddir = sys.argv[1]
     hg38_ddir = sys.argv[2]
     hg19_ddir = sys.argv[3]
 
     data = []
-    data += parse_ddir(t2t_ddir, "T2T")
+    data += parse_ddir(t2t_ddir, "T2T-CHM13")
     data += parse_ddir(hg38_ddir, "GRCh38")
     data += parse_ddir(hg19_ddir, "GRCh37")
 
     df = pd.DataFrame(
         data, columns=["RefSeq", "Truth", "Bench", "Refine", "Tool", "P", "R", "F1"]
     )
-    print(df)
+
+    # Supplementary Table 1 (full table)
     df.sort_values(by=["RefSeq", "Truth", "Bench", "Refine", "Tool"])
     df.to_csv(sys.stdout, index=False)
 
-    # df_latex = []
-    # for refseq in ["T2T", "GRCh38", "GRCh37"]:
-    #     for truth in ["dipcall", "SVIM-asm", "hapdiff"]:
-    #         for tool in sorted(df["Tool"].unique()):
-    #             row = [refseq, truth, tool]
-    #             for bench in BENCHS:
-    #                 for refine in [False, True]:
-    #                     df_row = df[(df["RefSeq"] == refseq) & (df["Truth"] == truth) & (df["Bench"] == bench) & (df["Refine"] == refine) & (df["Tool"] == tool)]
-    #                     row.append(float(df_row["P"].iloc[0]))
-    #                     row.append(float(df_row["R"].iloc[0]))
-    #                     row.append(float(df_row["F1"].iloc[0]))
-    #             df_latex.append(row)
-    # # first three: full genome (no refine), full genome (refine), confident regions (no refine), confident regions (refine)
-    # df_latex = pd.DataFrame(df_latex, columns = ["RefSeq", "Truth", "Caller", "P", "R", "F1", "P", "R", "F1", "P", "R", "F1", "P", "R", "F1"])
-    # # df_latex.to_latex(sys.stdout, index=False)
-    # df_latex.to_csv(sys.stdout, index=False)
-
-    # avg f1
-    for refseq in ["T2T", "GRCh38", "GRCh37"]:
-        for bench in BENCHS:
-            for refine in [False, True]:
+    # Numbers for manuscript: avg f1
+    for refseq in df["RefSeq"].unique():
+        for bench in df["Bench"].unique():
+            for refine in df["Refine"].unique():
                 avg_f1 = df[
                     (df["RefSeq"] == refseq)
                     & (df["Bench"] == bench)
@@ -164,57 +153,39 @@ def main_matrix():
                 ]["F1"].mean()
                 print(refseq, bench, "ref" if refine else "noref", avg_f1, sep="\t")
 
-    tools = df["Tool"].unique()
-    tools.sort()
-    # ro = df["Truth"].unique()
-    # ro.sort()
-    ro = ["dipcall", "SVIM-asm", "hapdiff"]
-    co = BENCHS
-
-    g = sns.catplot(
-        data=df,
-        x="Tool",
-        y="F1",
-        hue="RefSeq",
-        col="Bench",
-        row="Truth",
-        kind="bar",
-        order=tools,
-        row_order=ro,
-        col_order=co,
-        sharex=True,
-        sharey=True,
-        height=2.3,
-        aspect=1.6,
-        margin_titles=True,
-        legend_out=False,
+    # Supplementary Table 2 (delta(refine,norefine)
+    print(
+        "RefSeq", "Truth", "Bench", "Tool", "F1-refine", "F1-norefine", "delta", sep=","
     )
+    for refseq in df["RefSeq"].unique():
+        for truth in df["Truth"].unique():
+            for bench in df["Bench"].unique():
+                for tool in df["Tool"].unique():
+                    avg_f1_refine = df[
+                        (df["RefSeq"] == refseq)
+                        & (df["Truth"] == truth)
+                        & (df["Bench"] == bench)
+                        & (df["Tool"] == tool)
+                        & (df["Refine"] == True)
+                    ]["F1"].iloc[0]
+                    avg_f1_norefine = df[
+                        (df["RefSeq"] == refseq)
+                        & (df["Truth"] == truth)
+                        & (df["Bench"] == bench)
+                        & (df["Tool"] == tool)
+                        & (df["Refine"] == False)
+                    ]["F1"].iloc[0]
+                    print(
+                        refseq,
+                        truth,
+                        bench,
+                        tool,
+                        avg_f1_refine,
+                        avg_f1_norefine,
+                        round(avg_f1_refine - avg_f1_norefine, 2),
+                        sep=",",
+                    )
 
-    g.tick_params(axis="x", labelrotation=60)  # set_xticklabels(rotation=90)
-    g.set(ylim=(0, 100))
-
-    # for row in g.axes:
-    #     for ax in row:
-    #         ax.bar_label(ax.containers[0], rotation=90)
-    #         ax.bar_label(ax.containers[1], rotation=90)
-    #         ax.bar_label(ax.containers[2], rotation=90)
-
-    sns.move_legend(
-        g,
-        "upper left",
-        bbox_to_anchor=(0.07, 0.95),
-        title="",
-        ncol=3,
-        handletextpad=0.2,
-        columnspacing=1,
-    )
-    plt.tight_layout()
-    plt.show()
-    # plt.savefig(ddir + "/truvari-all.f1.png", dpi=300)
-    plt.close()
-
-    # original: all points on left, hg38 only on right plot
-    # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 5), sharey=True)
     fig, ax1 = plt.subplots(1, 1, figsize=(6, 6), sharey=True)
     sns.stripplot(
         df,
@@ -229,54 +200,88 @@ def main_matrix():
     )
     ax1.set_xlim(35, 100)
     sns.move_legend(ax1, "upper left")
-    # ax1.set_title("(a)")
-    # sns.stripplot(
-    #     df[(df["RefSeq"] == "hg38") & (df["Bench"] == "truvari-nosim")],
-    #     x="F1",
-    #     y="Tool",
-    #     hue="Truth",
-    #     alpha=0.6,
-    #     s=6,
-    #     order=tools,
-    #     linewidth=1,
-    #     palette="Oranges_d",
-    #     ax=ax2,
-    # )
-    # ax2.set_xlim(35, 100)
-    # ax2.set_title("(b) hg38 (truvari-nosim)")
 
     plt.tight_layout()
     plt.show()
 
 
-# def main_bar():
-#     sns.set(font_scale=0.75)
-#     csv_fn = sys.argv[1]
-#     df = pd.read_csv(csv_fn)
-#     df = df.sort_values(by=["Tool"], ascending=True)
+def main():
+    import itertools
 
-#     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 5))
-#     sns.scatterplot(data=df, x="P", y="R", hue="Tool", ax=ax1, legend=None)
+    t2t_ddir = sys.argv[1]
+    hg38_ddir = sys.argv[2]
+    hg19_ddir = sys.argv[3]
 
-#     for index, row in df.iterrows():
-#         if row["P"] >= 50 and row["R"] >= 50:
-#             ax1.text(row["P"] + 0.2, row["R"] + 0.2, row["Tool"])
-#     ax1.set_xlim(50, 100)
-#     ax1.set_ylim(50, 100)
+    data = []
+    data += parse_ddir(t2t_ddir, "T2T-CHM13")
+    data += parse_ddir(hg38_ddir, "GRCh38")
+    data += parse_ddir(hg19_ddir, "GRCh37")
 
-#     sns.barplot(data=df, x="Tool", y="F1", ax=ax2, color="steelblue", alpha=0.75)
-#     ax2.tick_params(axis="x", labelrotation=90)
-#     ax2.bar_label(ax2.containers[0])
-#     ax2.set_ylim(50, 100)
-#     plt.tight_layout()
-#     # plt.show()
-#     plt.savefig(csv_fn + ".png", dpi=300)
+    df = pd.DataFrame(
+        data, columns=["RefSeq", "Truth", "Bench", "Refine", "Tool", "P", "R", "F1"]
+    )
+    df.loc[df["Refine"] == True, "Refine"] = " (w/ ref)"
+    df.loc[df["Refine"] == False, "Refine"] = " (w/o ref)"
+
+    df["x"] = df["Bench"] + df["Refine"]  # .astype(str)
+    df["Rank"] = df.groupby(["RefSeq", "Truth", "Bench", "Refine"])["F1"].rank(
+        ascending=True
+    )
+    print(df)
+
+    nrows = len(df["RefSeq"].unique())
+    ncols = len(df["Truth"].unique())
+
+    fig, axes = plt.subplots(nrows, ncols, figsize=(9, 6), sharex=True, sharey=True)
+
+    legend = None
+    for row, refseq in enumerate(sorted(df["RefSeq"].unique())):
+        for col, truth in enumerate(sorted(df["Truth"].unique())):
+            sub_df = df[(df["RefSeq"] == refseq) & (df["Truth"] == truth)]
+            sns.lineplot(
+                sub_df,
+                x="x",
+                y="Rank",
+                hue="Tool",
+                ax=axes[row][col],
+                legend=(row == nrows - 1 and col == ncols - 1),
+            )
+            axes[row][col].set_ylim(0, 9)
+            if row == 0:
+                axes[row][col].set_title(truth)
+            if row == 2:
+                if col == 1:
+                    axes[row][col].set_xlabel("Truvari setting")
+                else:
+                    axes[row][col].set_xlabel("")
+                axes[row][col].set_xticklabels(
+                    axes[row][col].get_xticklabels(), rotation=90
+                )
+            if col == 0:
+                axes[row][col].set_ylabel(refseq)
+            if row == nrows - 1 and col == ncols - 1:
+                legend = axes[row][col].get_legend()
+                axes[row][col].get_legend().remove()
+                # sns.move_legend(
+                #     axes[row][col],
+                #     "upper left",
+                #     bbox_to_anchor=(1, 1),
+                #     title="",
+                #     ncol=3,
+                #     handletextpad=0.2,
+                #     columnspacing=1,
+                # )
+    plt.legend(bbox_to_anchor=(1, 1))
+    # fig.set_legend(legend)
+    plt.tight_layout()
+    plt.show()
 
 
 if __name__ == "__main__":
+    # main()
     if sys.argv[1] == "all":
         sys.argv.pop(0)
-        main_matrix()
+        main_all()
     elif sys.argv[1] == "rank":
         sys.argv.pop(0)
         main_rankmap()

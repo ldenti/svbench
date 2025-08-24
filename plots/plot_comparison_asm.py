@@ -94,7 +94,7 @@ def main():
                 ax=axes[i],
             )
 
-        x_titles = ["GRCh37", "GRCh38", "T2T"]
+        x_titles = ["GRCh37", "GRCh38", "T2T-CHM13"]
         for ax, title in zip(axes, x_titles):
             ax.set_title(title)
             ax.tick_params(axis="x", labelrotation=0)

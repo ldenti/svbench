@@ -9,7 +9,7 @@ import seaborn as sns
 # sns.set(font_scale=2)
 sns.set(style="whitegrid")
 
-REFSEQS = ["GRCh37", "GRCh38", "T2T"]
+REFSEQS = ["GRCh37", "GRCh38", "T2T-CHM13"]
 TRUTHS = ["dipcall", "svim-asm", "hapdiff"]
 
 
@@ -82,7 +82,7 @@ def main():
     args = parser.parse_args()
 
     df = []
-    d, t2t_truth = parse_dir(args.t2t, args.confident, "T2T")
+    d, t2t_truth = parse_dir(args.t2t, args.confident, "T2T-CHM13")
     df += d
     d, hg38_truth = parse_dir(args.hg38, args.confident, "GRCh38")
     df += d
@@ -110,7 +110,7 @@ def main():
         )
         axes[0][i].set_xlabel("")  # Truth
         axes[0][i].tick_params(axis="x", labelrotation=0)
-        axes[0][i].set_ylim(0, 35000)  # Count
+        axes[0][i].set_ylim(0, 20000)  # Count
         axes[0][i].set_ylabel("")  # Count
         if i == 0:
             axes[0][i].set_ylabel("(a)\nCount")
@@ -171,8 +171,22 @@ def main():
                 d[k] = d[k] + 1 if k in d else 1
             for k, v in d.items():
                 df2.append([truth, k, v])
+            refseq = "T2T"
+            if i == 0:
+                refseq = "hg19"
+            elif i == 1:
+                refseq = "hg38"
+            print(
+                refseq,
+                truth,
+                d["0"],
+                d["1"],
+                d["2+"],
+                (d["1"] + d["2+"]) / (d["0"] + d["1"] + d["2+"]),
+            )
 
         df2 = pd.DataFrame(df2, columns=["Truth", f"#Neighbors-{args.dist}bp", "Count"])
+
         sns.barplot(
             data=df2,
             x=f"#Neighbors-{args.dist}bp",
@@ -193,7 +207,7 @@ def main():
 
     # --- NM ttmars-like
     df = []
-    df += parse_pafs(args.t2t, args.confident, "T2T")
+    df += parse_pafs(args.t2t, args.confident, "T2T-CHM13")
     df += parse_pafs(args.hg38, args.confident, "GRCh38")
     df += parse_pafs(args.hg19, args.confident, "GRCh37")
 
@@ -202,7 +216,7 @@ def main():
     for i, refseq in enumerate(REFSEQS):
         subdf = df[df["RefSeq"] == refseq]
         for truth in TRUTHS:
-            print(refseq, truth)
+            print("NM", refseq, truth)
             print(subdf[subdf["Truth"] == truth]["NM"].describe())
         # sns.histplot(
         #     data=subdf,

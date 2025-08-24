@@ -10,7 +10,17 @@ sns.set(style="whitegrid")
 
 CMAP = "bone_r"
 
-TRUTHS = ["dipcall", "dipcallgiab", "hapdiff", "hapdiffgiab", "svimasm", "svimasmgiab", "giab11", "giab06"]
+TRUTHS = [
+    "dipcall",
+    "dipcallgiab",
+    "hapdiff",
+    "hapdiffgiab",
+    "svimasm",
+    "svimasmgiab",
+    "giab11",
+    "giab06",
+]
+
 
 def parse_summary(fpath):
     P, R, F = 0, 0, 0
@@ -31,8 +41,9 @@ def parse_summary(fpath):
             FN = int(line.split(" ")[1][:-1])
     return P, R, F, TP, FP, FN
 
+
 def build_matrix(wd):
-    data = {t:{} for t in TRUTHS}
+    data = {t: {} for t in TRUTHS}
     for folder in glob.glob(os.path.join(wd, "*")):
         print(folder)
         fname = folder.split("/")[-1]
@@ -46,18 +57,19 @@ def build_matrix(wd):
     print(data)
     M = [[0 for _ in TRUTHS] for _ in TRUTHS]
     M_annot = [[0 for _ in TRUTHS] for _ in TRUTHS]
-    for i1,t1 in enumerate(TRUTHS):
-        for i2,t2 in enumerate(TRUTHS):
+    for i1, t1 in enumerate(TRUTHS):
+        for i2, t2 in enumerate(TRUTHS):
             M[i2][i1] = data[t1][t2] if t2 in data[t1] else 0
             M_annot[i2][i1] = str(M[i2][i1]) if M[i2][i1] != 0 else ""
     return M, M_annot
 
-def main():
-    t2t_wd=sys.argv[1]
-    hg38_wd=sys.argv[2]
-    hg19_wd=sys.argv[3]
 
-    fig, axes = plt.subplots(1,3, figsize=(11,5))
+def main():
+    t2t_wd = sys.argv[1]
+    hg38_wd = sys.argv[2]
+    hg19_wd = sys.argv[3]
+
+    fig, axes = plt.subplots(1, 3, figsize=(11, 5))
 
     titles = ["GRCh37", "GRCh38", "T2T"]
 
@@ -78,7 +90,7 @@ def main():
             ax=axes[i],
         )
         axes[i].set_title(titles[i])
-    #         
+    #
     #         for ax, title in zip(axes, x_titles):
     #             ax.set_title(title)
     #             ax.tick_params(axis="x", labelrotation=0)

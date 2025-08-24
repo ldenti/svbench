@@ -11,6 +11,7 @@ sns.set(style="whitegrid")
 # REFSEQS = ["GRCh37", "GRCh38", "T2T"]
 REFSEQS = ["hg19", "hg38", "t2t"]
 
+
 def parse_vcf(vcf_fn, refseq="", name=""):
     data = []
     for record in VariantFile(vcf_fn):
@@ -38,19 +39,18 @@ def parse_vcf(vcf_fn, refseq="", name=""):
 
 # hg19:dipcall:/Users/ld/code/svbench/data/hg19/truths/dipcall.vcf.gz hg19:hapdiff:/Users/ld/code/svbench/data/hg19/truths/hapdiff.vcf.gz hg19:svim-asm:/Users/ld/code/svbench/data/hg19/truths/svim-asm.vcf.gz hg38:dipcall:/Users/ld/code/svbench/data/hg38/truths/dipcall.vcf.gz hg38:hapdiff:/Users/ld/code/svbench/data/hg38/truths/hapdiff.vcf.gz hg38:svim-asm:/Users/ld/code/svbench/data/hg38/truths/svim-asm.vcf.gz t2t:dipcall:/Users/ld/code/svbench/data/t2t/truths/dipcall.vcf.gz t2t:hapdiff:/Users/ld/code/svbench/data/t2t/truths/hapdiff.vcf.gz t2t:svim-asm:/Users/ld/code/svbench/data/t2t/truths/svim-asm.vcf.gz hg19:dipcall.giab:/Users/ld/code/svbench/data/hg19-giab/truths/dipcall.vcf.gz hg19:hapdiff.giab:/Users/ld/code/svbench/data/hg19-giab/truths/hapdiff.vcf.gz hg19:svim-asm.giab:/Users/ld/code/svbench/data/hg19-giab/truths/svim-asm.vcf.gz hg38:dipcall.giab:/Users/ld/code/svbench/data/hg38-giab/truths/dipcall.vcf.gz hg38:hapdiff.giab:/Users/ld/code/svbench/data/hg38-giab/truths/hapdiff.vcf.gz hg38:svim-asm.giab:/Users/ld/code/svbench/data/hg38-giab/truths/svim-asm.vcf.gz t2t:dipcall.giab:/Users/ld/code/svbench/data/t2t-giab/truths/dipcall.vcf.gz t2t:hapdiff.giab:/Users/ld/code/svbench/data/t2t-giab/truths/hapdiff.vcf.gz t2t:svim-asm.giab:/Users/ld/code/svbench/data/t2t-giab/truths/svim-asm.vcf.gz hg19:giab11:/Users/ld/code/svbench/data/giab-callsets/v11/hg19.vcf.gz t2t:giab11:/Users/ld/code/svbench/data/giab-callsets/v11/t2t.vcf.gz hg38:giab11:/Users/ld/code/svbench/data/giab-callsets/v11/hg38.vcf.gz
 
+
 def main():
     df = []
     for arg in sys.argv[1:]:
         ref, name, vcf = arg.split(":")
         df += parse_vcf(vcf, ref, name)
 
-    df = pd.DataFrame(
-        df, columns=["RefSeq", "Truth", "Chrom", "Len", "Type"]
-    )
+    df = pd.DataFrame(df, columns=["RefSeq", "Truth", "Chrom", "Len", "Type"])
     print(df)
     TRUTHS = df["Truth"].unique()
     print(TRUTHS)
-    
+
     fig, axes = plt.subplots(2, 3, figsize=(9, 11))
 
     for i, refseq in enumerate(REFSEQS):

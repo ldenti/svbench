@@ -23,7 +23,7 @@ rule subset:
         vcf=pjoin(WD, "truths-confident", "{asmcaller}.vcf.gz"),
     shell:
         """
-        bedtools intersect -header -a {input.vcf} -b {input.bed} | bgzip -c > {output.vcf}
+        bedtools intersect -header -u -a {input.vcf} -b {input.bed} | bgzip -c > {output.vcf}
         tabix -p vcf {output.vcf}
         """
 
@@ -175,7 +175,7 @@ rule hapdiff:
         hap2=HAP2,
     output:
         vcf=pjoin(WD, "truths", "hapdiff", "hapdiff_phased.vcf.gz"),
-        # bed=pjoin(WD, "truths", "hapdiff", "confident_regions.bed"),
+        bed=pjoin(WD, "truths", "hapdiff", "confident_regions.bed"),
     params:
         outd=pjoin(WD, "truths", "hapdiff"),
     conda:

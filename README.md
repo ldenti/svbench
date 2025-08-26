@@ -1,4 +1,4 @@
-# svbench
+# SVBench-FW
 
 Modular and extensible framework to evaluate SV callers (from long reads) against SV truthsets created from diploid genomes.
 
